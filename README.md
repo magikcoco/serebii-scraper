@@ -1,0 +1,1 @@
+A simple python script for extracting generation-dependent information from https://www.serebii.net/pokemon/nationalpokedex.shtml
