@@ -45,7 +45,8 @@ def gen_one_page(url):
         xp_grow_sp = "" # this is the speed of growth, like "Very Slow" or "Very Fast"
         xp_grow_pt = 0 # The growth points. I dont actually know wtf this one even means but its a number
         typing = [] # the type the pokemon is, may be multiple types
-        base_stats = {}
+        base_stats = {} # the base stats for the pokemon
+        moveset = {} # the moveset for this pokemon
         # go over the information in tandem so the type of information is identifiable with fooevo
         for fooevo, fooinfo in zip(fooevos, fooinfos):
             if "Picture" in fooevo.text: # get the picture from bulbapedia instead, there is a game sprite section
@@ -104,6 +105,33 @@ def gen_one_page(url):
             if "Effort" in fooevo.text:
                 break # nothing past this is useful
         
+        # Next get the move list
+        dextables = soup.find_all('table', class_='dextable')
+        lvl_up_dextable = dextables[6] # the moves gained from level up
+        tm_hm_dextable = dextables[7] # the moves gained by tm or hm
+        # move information is beyond the scope, to be stored in a separate movelist section.
+        # only need level data. tm or hm implicitly part of move data.
+        # Moves by level up table
+        # starting from the 3rd <tr>, get every other <tr> and take the first two <td> elements
+        lvl_soup = BeautifulSoup(str(lvl_up_dextable), 'html.parser')
+        lvl_tr_tags = lvl_soup.find_all('tr')
+        for tr_tag in lvl_tr_tags[2::2]:
+            td_tags = tr_tag.find_all('td', class_='fooinfo')
+            level = td_tags[0].text.strip() # has the level information
+            name = td_tags[1].text.strip() # has the name
+            try:
+                level = int(level)
+            except ValueError:
+                level = 0
+            moveset.setdefault(name, []).append(level)
+        #moves from tm/hm, level set as -1. in some cases a move might be on both lists, the leveled number comes first
+        tm_hm_soup = BeautifulSoup(str(tm_hm_dextable), 'html.parser')
+        tm_hm_tr_tags = tm_hm_soup.find_all('tr')
+        for tr_tag in tm_hm_tr_tags[2::2]:
+            td_tags = tr_tag.find_all('td', class_='fooinfo') 
+            name = td_tags[1].text.strip() # has the name
+            moveset.setdefault(name, []).append(-1) # treat all levels like -1
+
         entry = {
             "Dex Number": dex_num,
             "Name (english)": eng_name,
@@ -120,57 +148,17 @@ def gen_one_page(url):
             "Capture Rate": cap_rate,
             "XP Growth Speed": xp_grow_sp,
             "XP Growth Points": xp_grow_pt,
-            "Base Stats": base_stats
-            #"Moveset": moveset
+            "Base Stats": base_stats,
+            "Moveset": moveset
         }
 
         #add the completed entry to the generation dictionary
         gendict = pokemondict.setdefault("Gen 1",{})
         gendict[eng_name] = entry
+        print(gendict)
 
-        #print(gendict)
-    
     #TODO: remove this
-    exit(0) # exists so that I dont go through every pokemon when I want to test
-
-    """
-
-    # set the stats
-    typing = [""]
-    base_stats = {}
-    moveset = {}
-    
-    # moveset
-    # how to approach this??
-    # array of integers, such that it is [level], [-1] (meaning tm/hm), [level, -1] meaning from level up AND tm/hm
-
-    # fill base stat dict
-    base_stats.set("Hit Points", hp)
-    base_stats.set("Attack", atk)
-    base_stats.set("Defense", dfn)
-    base_stats.set("Special", sp)
-    base_stats.set("Speed", spe)
-
-    # create the dictionary for the pokemon
-    entry = {
-        "Dex Number": dex_num,
-        "Name": name,
-        "Type": typing,
-        "Class": classif,
-        "Height (Imperial)": imp_height,
-        "Height (Metric)": met_height,
-        "Weight (Imperial)": imp_weight,
-        "Weight (Metric)": met_weight,
-        "Capture Rate": cap_rate,
-        "XP Growth Speed": xp_grow_sp,
-        "XP Growth Points": xp_grow_pt,
-        "Base Stats": base_stats,
-        "Moveset": moveset
-    }
-
-    # add to the dictionary
-    gendict.set(name, entry)
-    """
+    #exit(0) # exists so that I dont go through every pokemon when I want to test
 
 def gen_two_page(url):
     """
