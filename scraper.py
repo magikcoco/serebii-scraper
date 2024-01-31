@@ -47,6 +47,8 @@ def gen_one_page(url):
         typing = [] # the type the pokemon is, may be multiple types
         base_stats = {} # the base stats for the pokemon
         moveset = {} # the moveset for this pokemon
+        locations = {} # the locations for each game where this pokemon is found
+
         # go over the information in tandem so the type of information is identifiable with fooevo
         for fooevo, fooinfo in zip(fooevos, fooinfos):
             if "Picture" in fooevo.text: # get the picture from bulbapedia instead, there is a game sprite section
@@ -105,8 +107,24 @@ def gen_one_page(url):
             if "Effort" in fooevo.text:
                 break # nothing past this is useful
         
-        # Next get the move list
         dextables = soup.find_all('table', class_='dextable')
+        # Next get location information
+        loc_dextable = dextables[5]
+        loc_soup = BeautifulSoup(str(loc_dextable), 'html.parser')
+        loc_tr_tags = loc_soup.find_all('tr')
+        for tr_tag in loc_tr_tags:
+            td_tags = tr_tag.find_all('td')
+            for td_tag in td_tags:
+                if 'class' in td_tag.attrs and any(cls in ['firered', 'leafgreen', 'sapphire', 'yellow'] for cls in td_tag['class']):
+                    next_td = td_tag.find_next(class_='fooinfo')
+                    if next_td is not None:
+                        locations[td_tag.text.strip()] = next_td.text.strip()
+                    else:
+                        locations[td_tag.text.strip()] = "Unknown"
+                else:
+                    continue
+        
+        # Next get the move list
         lvl_up_dextable = dextables[6] # the moves gained from level up
         tm_hm_dextable = dextables[7] # the moves gained by tm or hm
         # move information is beyond the scope, to be stored in a separate movelist section.
@@ -149,16 +167,14 @@ def gen_one_page(url):
             "XP Growth Speed": xp_grow_sp,
             "XP Growth Points": xp_grow_pt,
             "Base Stats": base_stats,
+            "Locations": locations,
             "Moveset": moveset
         }
 
         #add the completed entry to the generation dictionary
         gendict = pokemondict.setdefault("Gen 1",{})
         gendict[eng_name] = entry
-        print(gendict)
-
-    #TODO: remove this
-    #exit(0) # exists so that I dont go through every pokemon when I want to test
+        #print(gendict)
 
 def gen_two_page(url):
     """
