@@ -13,7 +13,7 @@ def request_page(url):
     """
     Grabs a URL and returns a Beuatiful Soup object that might be null
     """
-    time.sleep(5) # for avoiding a rate limit
+    #time.sleep(5) # for avoiding a rate limit
     response = requests.get(url)
     print(f"Webpage response: {response.status_code}")
     if response.status_code == 200:
@@ -420,7 +420,7 @@ def gen_two_page(url):
             "Locations": locations,
             "Moveset": moveset
         }
-        print(entry)
+        #print(entry)
         
         #add the completed entry to the generation dictionary
         gendict = pokemondict.setdefault("Gen 2",{})
@@ -434,6 +434,81 @@ def gen_three_page(url):
     handles grabbing info from generation 3 pages on serebii
     """
     print(f"Now downloading: {url}")
+    soup = request_page(url) # get the page to scrape
+    if soup is not None: # check for null
+        dextables = soup.find_all('table', class_='dextable')
+        tr_tags = ((BeautifulSoup(str(dextables[0]), 'html.parser')).find_all('tr'))
+        ## These come in weird. Here are the indexes:
+        ## 0: the label for pokemon game picture, national no. etc
+        ## 1: the data under the above
+        ## 2: a gif portrait
+        ## 3: the row containing a fooinfo with the ability text
+        ## 4: another picture
+        ## 5: the explanation for the ability
+        ## 6: a picture and the gender ratio label
+        ## 7: another picture
+        ## 8: the gender ratio information
+        ## 9: labels for classification, types, etc
+        ## 10: info for the above
+        ## 11: evolution chain label
+        ## 12: evolution chain info
+        # national dex, local dex, english name, japanese name
+        td_tags = tr_tags[1].find_all('td', class_='fooinfo')
+        dex_num = int(re.sub(r'\D', '', td_tags[1].text.strip())) # strips out everything that would make parsing as int fail
+        loc_num = int(re.sub(r'\D', '', td_tags[2].text.strip())) # strips out everything that would make parsing as int fail
+        eng_name = td_tags[3].text.strip()
+        jap_name = re.findall(r'[A-Za-z]+|[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+', td_tags[4].text.strip())
+        # abilities
+        td_tags = tr_tags[3].find_all('td', class_='fooinfo')
+        abilities = td_tags[1].text.strip().split(": ")[1].split(" & ")
+        # gender ratios
+        td_tags = tr_tags[8].find_all('td', class_='fooinfo')
+        mal_percent = float(re.sub(r'[^\d.]', '', td_tags[0].text.strip()))
+        fem_percent = float(re.sub(r'[^\d.]', '', td_tags[1].text.strip()))
+        # classification, type 1, type 2, height (imperial), weight (imperial)
+        td_tags = tr_tags[10].find_all('td', class_='fooinfo')
+        classif = td_tags[0].text.strip()
+        type1 = BeautifulSoup(str(td_tags[1]), 'html.parser').find('a')['href'].split('/')[-1].split('.')[0]
+        type2 = BeautifulSoup(str(td_tags[2]), 'html.parser').find('a')['href'].split('/')[-1].split('.')[0]
+        if type2 is not "na": # in this case the pokemon only has one type
+            typing = [type1, type2]
+        else:
+            typing = [type1]
+        imp_height = td_tags[3].text.strip()
+        imp_weight = td_tags[4].text.strip()
+        # evolution data
+        td_tags = tr_tags[12].find_all('td', class_='fooinfo')
+        evolve_level = int(re.sub(r'\D', '', td_tags[0].text.strip().split(">")[0]))
+        evole_into = int(re.sub(r'\D', '', BeautifulSoup(str(td_tags[0]), 'html.parser').find_all('a')[1]['href'].split('/')[-1].split('.')[0]))
+        # Wild hold item, dex category, color category
+        td_tags = (BeautifulSoup(str(dextables[1]), 'html.parser')).find_all('tr')[1].find_all('td')
+        wild_hold_items = 0
+
+        entry = {
+            "National Dex Number": dex_num,
+            "Hoenn Dex Number": loc_num,
+            "Name (english)": eng_name,
+            "Name (japanese)": jap_name,
+            "Abilities": abilities,
+            "Male Ratio": mal_percent,
+            "Female Ratio": fem_percent,
+            "Class": classif,
+            "Type": typing,
+            "Height (Imperial)": imp_height,
+            "Weight (Imperial)": imp_weight,
+            "Evolve Level": evolve_level,
+            "Evolves Into": evole_into,
+            "Wild Hold Items": wild_hold_items
+        }
+        print(entry)
+        
+        #add the completed entry to the generation dictionary
+        gendict = pokemondict.setdefault("Gen 2",{})
+        gendict[eng_name] = entry
+        #print(gendict)
+        
+        print("Download Complete!")
+        exit()
 
 def gen_four_page(url):
     """
@@ -481,10 +556,11 @@ def gen_page(gen, url):
         #gen_one_page(url)
         print("Skipping gen 1...")
     elif gen == 2:
-        gen_two_page(url)
+        #gen_two_page(url)
+        print("Skipping gen 2...")
     elif gen == 3:
-        #gen_three_page(url)
-        print("Skipping gen 3...")
+        gen_three_page(url)
+        #print("Skipping gen 3...")
     elif gen == 4:
         #gen_four_page(url)
         print("Skipping gen 4...")
