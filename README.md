@@ -1,5 +1,10 @@
 # Description
-A simple python script for extracting generation-dependent information from https://www.serebii.net/pokemon/nationalpokedex.shtml
+A simple python script for extracting generation-dependent information from [Serebii's National Dex](https://www.serebii.net/pokemon/nationalpokedex.shtml). The goal is to generate a JSON file complete with all the available data on each pokemon, as well as sprites (including animated ones from bulbapedia).
 ## TODO List
-- support for pokedex pages generations 2 through 9
+- support for pokedex pages generations 3 through 9
 - output data to json format
+- grab data for what the pokemon evolves into and at what level
+- download sprites from bulbapedia
+- download move info for each generation
+- download item info for each generation
+- improve error handling
