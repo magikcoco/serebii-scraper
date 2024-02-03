@@ -17,10 +17,29 @@ def request_page(url):
     response = requests.get(url)
     print(f"Webpage response: {response.status_code}")
     if response.status_code == 200:
-        return BeautifulSoup(response.text, 'html.parser')
+        return BeautifulSoup(response.text, 'html5lib') #magic parsing library do not touch
     else:
         #TODO: handle other errors
         return None
+
+def wild_hold_item_parse(text):
+    return_dict = {}
+    pattern = r'([A-Z][a-z\s]+)*\s*-\s*([A-Z]+|\d+%|(([A-Z][a-z\s]+)*))(?=[A-Z][a-z]|$)' # monstrosity
+    match = re.search(pattern, text)
+    matches = []
+    while(match is not None): # get all the matches
+        match = match.group(0)
+        text = text.replace(match, "")
+        if match.startswith("Wild") and len(match) > 4 and match[4].isupper():
+            match = match[4:]
+        if match.startswith("Gen I Trade") and len(match) > len("Gen I Trade"):
+            match = match[len("Gen I Trade"):]
+        matches.append(match)
+        match = re.search(pattern, text)
+    for string in matches:
+        key, value = string.split(" - ")
+        return_dict[key] = value
+    return return_dict
 
 def gen_one_page(url):
     """
@@ -437,7 +456,8 @@ def gen_three_page(url):
     soup = request_page(url) # get the page to scrape
     if soup is not None: # check for null
         dextables = soup.find_all('table', class_='dextable')
-        tr_tags = ((BeautifulSoup(str(dextables[0]), 'html.parser')).find_all('tr'))
+        dextables_index = 0
+        tr_tags = ((BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find_all('tr'))
         ## These come in weird. Here are the indexes:
         ## 0: the label for pokemon game picture, national no. etc
         ## 1: the data under the above
@@ -462,27 +482,107 @@ def gen_three_page(url):
         td_tags = tr_tags[3].find_all('td', class_='fooinfo')
         abilities = td_tags[1].text.strip().split(": ")[1].split(" & ")
         # gender ratios
-        td_tags = tr_tags[8].find_all('td', class_='fooinfo')
-        mal_percent = float(re.sub(r'[^\d.]', '', td_tags[0].text.strip()))
-        fem_percent = float(re.sub(r'[^\d.]', '', td_tags[1].text.strip()))
+        try:
+            td_tags = tr_tags[8].find_all('td', class_='fooinfo')
+            mal_percent = float(re.sub(r'[^\d.]', '', td_tags[0].text.strip()))
+            fem_percent = float(re.sub(r'[^\d.]', '', td_tags[1].text.strip()))
+        except IndexError:
+            td_tags = tr_tags[7].find_all('td', class_='fooinfo')
+            mal_percent = float(re.sub(r'[^\d.]', '', td_tags[0].text.strip()))
+            fem_percent = float(re.sub(r'[^\d.]', '', td_tags[1].text.strip()))
         # classification, type 1, type 2, height (imperial), weight (imperial)
-        td_tags = tr_tags[10].find_all('td', class_='fooinfo')
-        classif = td_tags[0].text.strip()
-        type1 = BeautifulSoup(str(td_tags[1]), 'html.parser').find('a')['href'].split('/')[-1].split('.')[0]
-        type2 = BeautifulSoup(str(td_tags[2]), 'html.parser').find('a')['href'].split('/')[-1].split('.')[0]
-        if type2 is not "na": # in this case the pokemon only has one type
-            typing = [type1, type2]
-        else:
-            typing = [type1]
+        type1, type2 = [], []
+        try:
+            td_tags = tr_tags[10].find_all('td', class_='fooinfo')
+            classif = td_tags[0].text.strip()
+            type1 = BeautifulSoup(str(td_tags[1]), 'html.parser').find('a')['href'].split('/')[-1].split('.')[0]
+            type2 = BeautifulSoup(str(td_tags[2]), 'html.parser').find('a')['href'].split('/')[-1].split('.')[0]
+        except IndexError:
+            td_tags = tr_tags[9].find_all('td', class_='fooinfo')
+            classif = td_tags[0].text.strip()
+            type1 = BeautifulSoup(str(td_tags[1]), 'html.parser').find('a')['href'].split('/')[-1].split('.')[0]
+            type2 = BeautifulSoup(str(td_tags[2]), 'html.parser').find('a')['href'].split('/')[-1].split('.')[0]
+        typing = [type1, type2]
         imp_height = td_tags[3].text.strip()
         imp_weight = td_tags[4].text.strip()
         # evolution data
-        td_tags = tr_tags[12].find_all('td', class_='fooinfo')
+        try:
+            td_tags = tr_tags[12].find_all('td', class_='fooinfo')
+        except IndexError:
+            td_tags = tr_tags[11].find_all('td', class_='fooinfo')
         evolve_level = int(re.sub(r'\D', '', td_tags[0].text.strip().split(">")[0]))
         evole_into = int(re.sub(r'\D', '', BeautifulSoup(str(td_tags[0]), 'html.parser').find_all('a')[1]['href'].split('/')[-1].split('.')[0]))
         # Wild hold item, dex category, color category
-        td_tags = (BeautifulSoup(str(dextables[1]), 'html.parser')).find_all('tr')[1].find_all('td')
-        wild_hold_items = 0
+        dextables_index = dextables_index + 1
+        td_tags = (BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find_all('tr')[1].find_all('td')
+        wild_hold_items = wild_hold_item_parse(td_tags[0].text.strip())
+        dex_category = td_tags[1].find('a')['href'].split('/')[-1].split('.')[0]
+        color_category = td_tags[2].text.strip()
+        # Flavor text
+        dextables_index = dextables_index + 2
+        tr_tags = ((BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find_all('tr'))
+        flavors = {}
+        for tr_tag in tr_tags[1:]:
+            tds = tr_tag.find_all('td')
+            flavors[tds[0].text.strip()] = tds[1].text.strip()
+        # Locations
+        dextables_index = dextables_index + 1
+        tr_tags = ((BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find_all('tr'))
+        locations = {}
+        for tr_tag in tr_tags[2:]:
+            tds = tr_tag.find_all('td')
+            locations[tds[0].text.strip()] = tds[1].text.strip().split(", ")
+        # Level up moves for Ruby/Sapphire/Emerald/Colosseum/XD
+        dextables_index = dextables_index + 1
+        move_start_index = dextables_index
+        more_move_tables = not ("Steps" in (BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find('tr').text)
+        labels = ["Ruby/Sapphire/Emerald/Colosseum/XD Level Up",
+        "Fire Red/Leaf Green Level Up",
+        "TM & HM",
+        "Fire Red/Leaf Green/Emerald Move Tutor",
+        "Emerald Move Tutor",
+        "Egg Moves",
+        "Special Attacks"]
+        moveset = {}
+        while(more_move_tables):
+            tr_tags = ((BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find_all('tr'))
+            moves = {}
+            for tr_tag in tr_tags[2::2]:
+                tds = tr_tag.find_all('td')
+                if not any(keyword in (BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find('tr').text for keyword in ("Level", "TM")):
+                    moves[tds[0].text.strip()] = 0
+                else:
+                    try:
+                        moves[tds[1].text.strip()] = int(tds[0].text.strip())
+                    except ValueError:
+                        moves[tds[1].text.strip()] = 0
+            moveset[labels[dextables_index-move_start_index]] = moves
+            dextables_index = dextables_index + 1
+            more_move_tables = not ("Steps" in (BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find('tr').text)
+        # Egg Steps, Effort Points gained, Catch rate
+        # dextables will be incremented already by the loop prior
+        td_tags = (BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find_all('tr')[1].find_all('td')
+        egg_steps = int(re.sub(r'\D', '', td_tags[0].text.strip()))
+        pts = td_tags[1].text.strip().split(", ")
+        effort_points = {}
+        for pt in pts:
+            splitup = pt.split(": ")
+            effort_points[splitup[0]] = int(re.sub(r'\D', '', splitup[1]))
+        catch_rate = int(re.sub(r'\D', '', td_tags[2].text.strip()))
+        # Egg groups
+        dextables_index = dextables_index + 1
+        tr_tags = (BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find_all('tr')[2:]
+        egg_groups = []
+        for tr_tag in tr_tags:
+            egg_groups.append(tr_tag.find_all('td')[1].text.strip())
+        # Base stats
+        dextables_index = dextables_index + 1
+        tr_tags = ((BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find_all('tr'))
+        labels = [td.text.strip() for td in tr_tags[1].find_all('td')[1:]]
+        base_stats = {}
+        for index, td_tag in enumerate(tr_tags[2].find_all('td', class_='cen')):
+            base_stats[labels[index]] = int(td_tag.text.strip())
+
 
         entry = {
             "National Dex Number": dex_num,
@@ -498,9 +598,16 @@ def gen_three_page(url):
             "Weight (Imperial)": imp_weight,
             "Evolve Level": evolve_level,
             "Evolves Into": evole_into,
-            "Wild Hold Items": wild_hold_items
+            "Wild Hold Items": wild_hold_items,
+            "Dex Category": dex_category,
+            "Color Category": color_category,
+            "Egg Groups": egg_groups,
+            "Base Stats": base_stats,
+            "Flavor Text": flavors,
+            "Locations": locations,
+            "Moveset": moveset
         }
-        print(entry)
+        #print(entry)
         
         #add the completed entry to the generation dictionary
         gendict = pokemondict.setdefault("Gen 2",{})
@@ -508,7 +615,7 @@ def gen_three_page(url):
         #print(gendict)
         
         print("Download Complete!")
-        exit()
+        #exit()
 
 def gen_four_page(url):
     """
