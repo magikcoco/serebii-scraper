@@ -197,6 +197,7 @@ def gen_one_page(url):
         gendict = pokemondict.setdefault("Gen 1",{})
         gendict[eng_name] = entry
         #print(gendict)
+        print(pokemondict)
         print("Download Complete!")
 
 def gen_two_page(url):
@@ -610,7 +611,7 @@ def gen_three_page(url):
         #print(entry)
         
         #add the completed entry to the generation dictionary
-        gendict = pokemondict.setdefault("Gen 2",{})
+        gendict = pokemondict.setdefault("Gen 3",{})
         gendict[eng_name] = entry
         #print(gendict)
         
@@ -622,6 +623,34 @@ def gen_four_page(url):
     handles grabbing info from generation 4 pages on serebii
     """
     print(f"Now downloading: {url}")
+    soup = request_page(url) # get the page to scrape
+    if soup is not None: # check for null
+        dextables = soup.find_all('table', class_='dextable')
+        dextables_index = 1 # skipping the first one
+        tr_tags = ((BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find_all('tr'))
+        td_tags = tr_tags[1].find_all('td', class_='fooinfo')
+        eng_name = td_tags[0].text.strip()
+        jap_name = re.findall(r'[A-Za-z]+|[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+', td_tags[1].text.strip())
+        numbers = td_tags[2].text.strip().split("#")[1:]
+        dex_num = int(re.sub(r'\D', '', numbers[0].strip())) # strips out everything that would make parsing as int fail
+        loc_num = int(re.sub(r'\D', '', numbers[1].strip())) # strips out everything that would make parsing as int fail
+
+
+        entry = {
+                "National Dex Number": dex_num,
+                "Hoenn Dex Number": loc_num,
+                "Name (english)": eng_name,
+                "Name (japanese)": jap_name
+            }
+        #print(entry)
+            
+        #add the completed entry to the generation dictionary
+        gendict = pokemondict.setdefault("Gen 3",{})
+        gendict[eng_name] = entry
+        print(gendict)
+            
+        print("Download Complete!")
+        exit()
 
 def gen_five_page(url):
     """
@@ -666,11 +695,11 @@ def gen_page(gen, url):
         #gen_two_page(url)
         print("Skipping gen 2...")
     elif gen == 3:
-        gen_three_page(url)
-        #print("Skipping gen 3...")
+        #gen_three_page(url)
+        print("Skipping gen 3...")
     elif gen == 4:
-        #gen_four_page(url)
-        print("Skipping gen 4...")
+        gen_four_page(url)
+        #print("Skipping gen 4...")
     elif gen == 5:
         #gen_five_page(url)
         print("Skipping gen 5...")
