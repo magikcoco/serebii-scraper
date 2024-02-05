@@ -36,6 +36,23 @@ def scrape_page(url):
         weight = td_tags[2].text.strip()
         cap_rate = int(re.sub(r'\D', '', td_tags[3].text.strip()))
         base_egg_steps = int(re.sub(r'\D', '', td_tags[4].text.strip()))
+        # xp growth, base happiness, ev's earned, color, safari zone flee rate
+        td_tags = tr_tags[11].find_all('td')
+        xp_grow_pt, xp_grow_sp = td_tags[0].text.strip().split(" Points")
+        xp_grow_pt = int(xp_grow_pt.replace(",", "")) # number has commas seperating hundreds, thousands, etc
+        base_happiness = int(td_tags[1].text.strip())
+        ev_earned = td_tags[2].text.strip()
+        color = td_tags[3].text.strip()
+        safari_flee = int(td_tags[4].text.strip())
+
+        # wild hold items and egg groups
+        dextables_index = dextables_index + 2 # skip over damage taken table
+        tr_tags = ((BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find_all('tr'))
+        td_tags = tr_tags[1].find_all('td', class_='fooinfo')
+        wild_hold_items = wild_hold_item_parse(td_tags[0].text.strip())
+        egg_groups = []
+        for tr_tag in td_tags[1].find('table').find_all('tr'):
+            egg_groups.append(tr_tag.find_all('td')[1].find('a').text.strip())
 
         entry = {
                 "National Dex Number": dex_num,
@@ -50,7 +67,15 @@ def scrape_page(url):
                 "Height": height,
                 "Weight": weight,
                 "Capture Rate": cap_rate,
-                "Base Egg Steps": base_egg_steps
+                "Base Egg Steps": base_egg_steps,
+                "XP Growth Speed": xp_grow_sp,
+                "XP Growth Points": xp_grow_pt,
+                "Base Happiness": base_happiness,
+                "Effort Values Earned": ev_earned,
+                "Color": color,
+                "Safari Zone Flee Rate": safari_flee,
+                "Wild Hold Items": wild_hold_items,
+                "Egg Groups": egg_groups
             }
         
         print("Download Complete!")
