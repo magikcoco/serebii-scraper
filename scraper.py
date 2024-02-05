@@ -2,13 +2,14 @@ import sys
 sys.path.insert(0, './serebii-generation-pages')
 import generation1, generation2, generation3, generation4
 from helperfunctions import request_page
+from autosavedict import AutoSaveDict
 from bs4 import BeautifulSoup
 import requests, re, time
 
 print("Running: ", __file__)
 print("In environment: ", sys.prefix)
 
-pokemondict = {}
+pokemondict = AutoSaveDict(file_path="./pokedex_data.json")
 
 def scrape_gen_page(gen, url):
     """
@@ -20,23 +21,27 @@ def scrape_gen_page(gen, url):
         key, value = generation1.scrape_page(url)
         gendict = pokemondict.setdefault("Gen 1", {})
         gendict[key] = value
+        pokemondict["Gen 1"] = gendict
         #print("Skipping gen 1...")
         #print(pokemondict)
-        #exit()
+        exit()
     elif gen == 2:
         key, value = generation2.scrape_page(url)
         gendict = pokemondict.setdefault("Gen 2", {})
         gendict[key] = value
+        pokemondict["Gen 2"] = gendict
         #print("Skipping gen 2...")
     elif gen == 3:
         key, value = generation3.scrape_page(url)
         gendict = pokemondict.setdefault("Gen 3", {})
         gendict[key] = value
+        pokemondict["Gen 3"] = gendict
         #print("Skipping gen 3...")
     elif gen == 4:
         key, value = generation4.scrape_page(url)
         gendict = pokemondict.setdefault("Gen 4", {})
         gendict[key] = value
+        pokemondict["Gen 4"] = gendict
         #print("Skipping gen 4...")
     elif gen == 5:
         #gen_five_page(url)
