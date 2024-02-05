@@ -18,25 +18,25 @@ def scrape_gen_page(gen, url):
     # generation pages vary slightly in format so each generation is split into seperate functions
     # additionally if only one page is changed, not all of them break
     if gen == 1:
-        key, value = generation1.scrape_page(url)
-        gendict = pokemondict.setdefault("Gen 1", {})
-        gendict[key] = value
-        pokemondict["Gen 1"] = gendict
-        #print("Skipping gen 1...")
+        #key, value = generation1.scrape_page(url)
+        #gendict = pokemondict.setdefault("Gen 1", {})
+        #gendict[key] = value
+        #pokemondict["Gen 1"] = gendict
+        print("Skipping gen 1...")
         #print(pokemondict)
         exit()
     elif gen == 2:
-        key, value = generation2.scrape_page(url)
-        gendict = pokemondict.setdefault("Gen 2", {})
-        gendict[key] = value
-        pokemondict["Gen 2"] = gendict
-        #print("Skipping gen 2...")
+        #key, value = generation2.scrape_page(url)
+        #gendict = pokemondict.setdefault("Gen 2", {})
+        #gendict[key] = value
+        #pokemondict["Gen 2"] = gendict
+        print("Skipping gen 2...")
     elif gen == 3:
-        key, value = generation3.scrape_page(url)
-        gendict = pokemondict.setdefault("Gen 3", {})
-        gendict[key] = value
-        pokemondict["Gen 3"] = gendict
-        #print("Skipping gen 3...")
+        #key, value = generation3.scrape_page(url)
+        #gendict = pokemondict.setdefault("Gen 3", {})
+        #gendict[key] = value
+        #pokemondict["Gen 3"] = gendict
+        print("Skipping gen 3...")
     elif gen == 4:
         key, value = generation4.scrape_page(url)
         gendict = pokemondict.setdefault("Gen 4", {})

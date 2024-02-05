@@ -14,6 +14,7 @@ def scrape_page(url):
     if soup is not None: # check for null
         dextables = soup.find_all('table', class_='dextable')
         dextables_index = 1 # skipping the first one
+        #names, dex numbers, gender ratio, types
         tr_tags = ((BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find_all('tr'))
         td_tags = tr_tags[1].find_all('td', class_='fooinfo')
         eng_name = td_tags[0].text.strip()
@@ -21,13 +22,35 @@ def scrape_page(url):
         numbers = td_tags[2].text.strip().split("#")[1:]
         dex_num = int(re.sub(r'\D', '', numbers[0].strip())) # strips out everything that would make parsing as int fail
         loc_num = int(re.sub(r'\D', '', numbers[1].strip())) # strips out everything that would make parsing as int fail
-
+        gender_ratio = td_tags[3].text.strip().split(":")[1:]
+        mal_percent = float(re.sub(r'[^\d.]', '', gender_ratio[0].strip()))
+        fem_percent = float(re.sub(r'[^\d.]', '', gender_ratio[1].strip()))
+        type1, type2 = [a_tag['href'].split('/')[-1].split('.')[0] for a_tag in td_tags[4].find_all('a')[:2]]
+        typing = [type1, type2]
+        # abilities, using the label in this case since its easier
+        abilities = [ability.strip() for ability in tr_tags[6].find('td').text.split(":")[1].split("&")]
+        # classification, height (imp), weight (imp), cap rate, base egg steps
+        td_tags = tr_tags[9].find_all('td')
+        classification = td_tags[0].text.strip()
+        height = td_tags[1].text.strip()
+        weight = td_tags[2].text.strip()
+        cap_rate = int(re.sub(r'\D', '', td_tags[3].text.strip()))
+        base_egg_steps = int(re.sub(r'\D', '', td_tags[4].text.strip()))
 
         entry = {
                 "National Dex Number": dex_num,
                 "Hoenn Dex Number": loc_num,
                 "Name (english)": eng_name,
-                "Name (japanese)": jap_name
+                "Name (japanese)": jap_name,
+                "Male Ratio": mal_percent,
+                "Female Ratio": fem_percent,
+                "Type": typing,
+                "Abilites": abilities,
+                "Classification": classification,
+                "Height": height,
+                "Weight": weight,
+                "Capture Rate": cap_rate,
+                "Base Egg Steps": base_egg_steps
             }
         
         print("Download Complete!")
