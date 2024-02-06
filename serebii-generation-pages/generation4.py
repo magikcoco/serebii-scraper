@@ -168,6 +168,15 @@ def scrape_page(url):
             moveset[label] = sub_moveset
             dextables_index = dextables_index + 1
             more_move_tables = not ("Stats" in (BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find('tr').text)
+        
+        # base stats
+        dextables_index = dextables_index + 1
+        tr_tags = (BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find_all('tr')
+        base_stats = {}
+        labels = [td.text.strip() for td in tr_tags[1].find_all('td')[1:]]
+        td_tags = tr_tags[2].find_all('td')[1:]
+        for label, td_tag in zip(labels, td_tags):
+            base_stats[label] = int(td_tag.text.strip())
 
         entry = {
                 "National Dex Number": dex_num,
@@ -196,9 +205,9 @@ def scrape_page(url):
                 "Evolves From": evolve_from,
                 "Flavor Text": flavor_text,
                 "Locations": locations,
-                "Moveset": moveset
+                "Moveset": moveset,
+                "Base Stats": base_stats
             }
-            #TODO: base stats
         
         print("Download Complete!")
 
