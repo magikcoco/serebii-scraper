@@ -120,6 +120,54 @@ def scrape_page(url):
             evolve_level = 0
             evolve_into = pkmn_one
             evolve_from = pkmn_one
+        
+        # flavor text
+        dextables_index = dextables_index + 1
+        tr_tags = (BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find_all('tr')[1:]
+        flavor_text = {}
+        last_flavor = "No text"
+        for tr_tag in tr_tags:
+            td_tags = tr_tag.find_all('td')
+            if len(td_tags) > 1:
+                last_flavor = td_tags[1].text.strip()
+                flavor_text[td_tags[0].text.strip()] = last_flavor
+            else:
+                flavor_text[td_tags[0].text.strip()] = last_flavor
+
+        # locations
+        dextables_index = dextables_index + 1
+        tr_tags = (BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find_all('tr')[2:-1]
+        locations = {}
+        for tr_tag in tr_tags:
+            td_tags = tr_tag.find_all('td')
+            locations[td_tags[0].text.strip()] = td_tags[1].text.strip().split(", ")
+        
+        # moveset
+        moveset = {}
+        dextables_index = dextables_index + 1
+        more_move_tables = not ("Stats" in (BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find('tr').text)
+        while(more_move_tables):
+            tr_tags = (BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find_all('tr')
+            label = tr_tags[0].text.strip()
+            if "Level" in label or "TM" in label:
+                name_index = 1
+            else:
+                name_index = 0
+            sub_moveset = {}
+            for tr_tag in tr_tags[2::2]:
+                td_tags = tr_tag.find_all('td')
+                if name_index:
+                    try:
+                        level = int(td_tags[0].text.strip())
+                    except ValueError: # if not level then set level to 0
+                        level = 0
+                else:
+                    level = 0
+                if len(td_tags) > 1: # prevents some weirdness with tables embedded in tables getting picked up as labels
+                    sub_moveset[td_tags[name_index].text.strip()] = level
+            moveset[label] = sub_moveset
+            dextables_index = dextables_index + 1
+            more_move_tables = not ("Stats" in (BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find('tr').text)
 
         entry = {
                 "National Dex Number": dex_num,
@@ -145,8 +193,12 @@ def scrape_page(url):
                 "Egg Groups": egg_groups,
                 "Evolves at level": evolve_level,
                 "Evolves Into": evolve_into,
-                "Evolves From": evolve_from
+                "Evolves From": evolve_from,
+                "Flavor Text": flavor_text,
+                "Locations": locations,
+                "Moveset": moveset
             }
+            #TODO: base stats
         
         print("Download Complete!")
 
