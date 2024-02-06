@@ -1,5 +1,5 @@
 # Description
-A WIP python project for extracting generation-dependent information from [Serebii's National Dex](https://www.serebii.net/pokemon/nationalpokedex.shtml). The goal is to generate a JSON file complete with all the available data on each pokemon, ability, item, and move, as well as game sprites from [Bulbapedia](https://archives.bulbagarden.net/wiki/Category:Game_sprites). Ultimately, the project should generate as complete of a dataset on pokemon as is possible through itnernet resources.
+A WIP python project for extracting generation-dependent information from [Serebii's National Dex](https://www.serebii.net/pokemon/nationalpokedex.shtml). The goal is to generate a JSON file complete with all the available data on each pokemon, ability, item, and move, as well as game sprites from [Bulbapedia](https://archives.bulbagarden.net/wiki/Category:Game_sprites). Ultimately, the project should generate as complete of a dataset on pokemon as is possible through internet resources.
 ## TODO List
 - support for pokedex pages generations 4 and 5
 - clean up scripts for generations 1 thru 5 (patch missing information, more maintainable, error handling, etc)
