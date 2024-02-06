@@ -13,8 +13,9 @@ def scrape_page(url):
     soup = request_page(url) # get the page to scrape
     if soup is not None: # check for null
         dextables = soup.find_all('table', class_='dextable')
-        dextables_index = 1 # skipping the first one
+        
         #names, dex numbers, gender ratio, types
+        dextables_index = 1 # skipping the first one
         tr_tags = ((BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find_all('tr'))
         td_tags = tr_tags[1].find_all('td', class_='fooinfo')
         eng_name = td_tags[0].text.strip()
@@ -27,23 +28,43 @@ def scrape_page(url):
         fem_percent = float(re.sub(r'[^\d.]', '', gender_ratio[1].strip()))
         type1, type2 = [a_tag['href'].split('/')[-1].split('.')[0] for a_tag in td_tags[4].find_all('a')[:2]]
         typing = [type1, type2]
+
         # abilities, using the label in this case since its easier
         abilities = [ability.strip() for ability in tr_tags[6].find('td').text.split(":")[1].split("&")]
+
         # classification, height (imp), weight (imp), cap rate, base egg steps
-        td_tags = tr_tags[9].find_all('td')
-        classification = td_tags[0].text.strip()
-        height = td_tags[1].text.strip()
-        weight = td_tags[2].text.strip()
-        cap_rate = int(re.sub(r'\D', '', td_tags[3].text.strip()))
-        base_egg_steps = int(re.sub(r'\D', '', td_tags[4].text.strip()))
+        try:
+            td_tags = tr_tags[9].find_all('td')
+            classification = td_tags[0].text.strip()
+            height = td_tags[1].text.strip()
+            weight = td_tags[2].text.strip()
+            cap_rate = int(re.sub(r'\D', '', td_tags[3].text.strip()))
+            base_egg_steps = int(re.sub(r'\D', '', td_tags[4].text.strip()))
+        except ValueError:
+            td_tags = tr_tags[10].find_all('td')
+            classification = td_tags[0].text.strip()
+            height = td_tags[1].text.strip()
+            weight = td_tags[2].text.strip()
+            cap_rate = int(re.sub(r'\D', '', td_tags[3].text.strip()))
+            base_egg_steps = int(re.sub(r'\D', '', td_tags[4].text.strip()))
+
         # xp growth, base happiness, ev's earned, color, safari zone flee rate
-        td_tags = tr_tags[11].find_all('td')
-        xp_grow_pt, xp_grow_sp = td_tags[0].text.strip().split(" Points")
-        xp_grow_pt = int(xp_grow_pt.replace(",", "")) # number has commas seperating hundreds, thousands, etc
-        base_happiness = int(td_tags[1].text.strip())
-        ev_earned = td_tags[2].text.strip()
-        color = td_tags[3].text.strip()
-        safari_flee = int(td_tags[4].text.strip())
+        try:
+            td_tags = tr_tags[11].find_all('td')
+            xp_grow_pt, xp_grow_sp = td_tags[0].text.strip().split(" Points")
+            xp_grow_pt = int(xp_grow_pt.replace(",", "")) # number has commas seperating hundreds, thousands, etc
+            base_happiness = int(td_tags[1].text.strip())
+            ev_earned = td_tags[2].text.strip()
+            color = td_tags[3].text.strip()
+            safari_flee = int(td_tags[4].text.strip())
+        except ValueError:
+            td_tags = tr_tags[12].find_all('td')
+            xp_grow_pt, xp_grow_sp = td_tags[0].text.strip().split(" Points")
+            xp_grow_pt = int(xp_grow_pt.replace(",", "")) # number has commas seperating hundreds, thousands, etc
+            base_happiness = int(td_tags[1].text.strip())
+            ev_earned = td_tags[2].text.strip()
+            color = td_tags[3].text.strip()
+            safari_flee = int(td_tags[4].text.strip())
 
         # wild hold items and egg groups
         dextables_index = dextables_index + 2 # skip over damage taken table
@@ -53,6 +74,52 @@ def scrape_page(url):
         egg_groups = []
         for tr_tag in td_tags[1].find('table').find_all('tr'):
             egg_groups.append(tr_tag.find_all('td')[1].find('a').text.strip())
+
+        # evolutions
+        dextables_index = dextables_index + 1
+        td_tags = (BeautifulSoup(str(dextables[dextables_index]), 'html.parser')).find_all('tr')[1].find_all('td')[1:]
+        evolutions = len(td_tags) # this should be either 1, 3, or 5 in length
+        evolve_level, evolve_into, evolve_from = 0, 0, 0
+        if evolutions == 5:
+            pkmn_one = int(re.sub(r'\D', '', td_tags[0].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+            pkmn_two = int(re.sub(r'\D', '', td_tags[2].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+            pkmn_three = int(re.sub(r'\D', '', td_tags[4].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+            if dex_num == pkmn_one:
+                try:
+                    evolve_level = int(re.sub(r'\D', '', td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()))
+                except ValueError:
+                    evolve_level = td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()
+                evolve_into = pkmn_two
+                evolve_from = pkmn_one
+            elif dex_num == pkmn_two:
+                try:
+                    evolve_level = int(re.sub(r'\D', '', td_tags[3].find('img')['src'].split('/')[-1].split('.')[0].strip()))
+                except ValueError:
+                    evolve_level = td_tags[3].find('img')['src'].split('/')[-1].split('.')[0].strip()
+                evolve_into = pkmn_three
+                evolve_from = pkmn_one
+            else:
+                evolve_level = 0
+                evolve_into = pkmn_three
+                evolve_from = pkmn_two
+        elif evolutions == 3:
+            pkmn_one = int(re.sub(r'\D', '', td_tags[0].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+            pkmn_two = int(re.sub(r'\D', '', td_tags[2].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+            if dex_num == pkmn_one:
+                try:
+                    evolve_level = int(re.sub(r'\D', '', td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()))
+                except ValueError:
+                    evolve_level = td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()
+                evolve_into = pkmn_two
+                evolve_from = pkmn_one
+            else: 
+                evolve_level = 0
+                evolve_into = pkmn_two
+                evolve_from = pkmn_one
+        else:
+            evolve_level = 0
+            evolve_into = pkmn_one
+            evolve_from = pkmn_one
 
         entry = {
                 "National Dex Number": dex_num,
@@ -75,7 +142,10 @@ def scrape_page(url):
                 "Color": color,
                 "Safari Zone Flee Rate": safari_flee,
                 "Wild Hold Items": wild_hold_items,
-                "Egg Groups": egg_groups
+                "Egg Groups": egg_groups,
+                "Evolves at level": evolve_level,
+                "Evolves Into": evolve_into,
+                "Evolves From": evolve_from
             }
         
         print("Download Complete!")
