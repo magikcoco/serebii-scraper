@@ -180,7 +180,7 @@ def scrape_page(url):
 
         entry = {
                 "National Dex Number": dex_num,
-                "Hoenn Dex Number": loc_num,
+                "Johto Dex Number": loc_num,
                 "Name (english)": eng_name,
                 "Name (japanese)": jap_name,
                 "Male Ratio": mal_percent,
