@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(0, './serebii-generation-pages')
-import generation1, generation2, generation3, generation4
+import generation1, generation2, generation3, generation4, generation5
 from helperfunctions import request_page
 from autosavedict import AutoSaveDict
 from bs4 import BeautifulSoup
@@ -38,14 +38,17 @@ def scrape_gen_page(gen, url):
         #pokemondict["Gen 3"] = gendict
         print("Skipping gen 3...")
     elif gen == 4:
-        key, value = generation4.scrape_page(url)
+        #key, value = generation4.scrape_page(url)
+        #gendict = pokemondict.setdefault("Gen 4", {})
+        #gendict[key] = value
+        #pokemondict["Gen 4"] = gendict
+        print("Skipping gen 4...")
+    elif gen == 5:
+        key, value = generation5.scrape_page(url)
         gendict = pokemondict.setdefault("Gen 4", {})
         gendict[key] = value
         pokemondict["Gen 4"] = gendict
-        #print("Skipping gen 4...")
-    elif gen == 5:
-        #gen_five_page(url)
-        print("Skipping gen 5...")
+        #print("Skipping gen 5...")
     elif gen == 6:
         #gen_six_page(url)
         print("Skipping gen 6...")
