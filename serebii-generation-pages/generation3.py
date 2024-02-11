@@ -5,7 +5,7 @@ import re
 def scrape_page(url):
     """
     handles grabbing info from generation 3 pages on serebii
-    xpects a url to a gen3 pokedex page for a specific pokemon on serebii
+    expects a url to a gen3 pokedex page for a specific pokemon on serebii
     returns a string of the english name for the pokemon, and a dictionary containing the info for that pokemon which was scraped from the page
     if request_page from helperfunctions returns None, then this will return None, None
     """
