@@ -14,32 +14,74 @@ def scrape_page(url):
     if soup is not None: # check for null
         dextables = soup.find_all('table', class_='dextable')
 
+        ## dextables MAP ##
+        # dextables[0]: sprites table
+        # dextables[1]: general info table, includes names, pokdex numbers, gender ratio, types, abilities, classification, height, weight, capture rate
+        # base egg steps, exp growth, base happiness, effor values earned, flee flag, and entree forest level
+        # dextables[2]: damage taken chart
+        # dextables[3]: wild hold item and egg group(s) info
+        # dextables[4]: evolutionary chain
+        # dextables[5]: locations
+        # dextables[6]: flavor text
+        # dextables[7]: the first move table. there are a variable number of these, so counting upwards from here doesnt work
+        # dextables[-1]: stats information, including base stats, is the last dextable on the page
+
         dextables_index = 1 # start at 1
-        tr_tags = dextables[1].find_all('tr')
+        tr_tags = dextables[1].find_all('tr') # the rows of the target dextable
 
-        # names
-        td_tags = tr_tags[1].find_all('td', class_='fooinfo')
-        eng_name = td_tags[0].text.strip()
-        other_names = [name.strip() for name in td_tags[1].text.strip().split('\n')]
-        jap_name = re.findall(r'[A-Za-z]+|[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+', other_names[0].split(": ")[1])
-        fre_name = other_names[1].split(": ")[1]
-        ger_name = other_names[2].split(": ")[1]
-        kor_name = other_names[3].split(": ")[1]
+        ## tr_tags MAP ##
+        # tr_tags[0]: labels for names, dex numbers, gender ratio, and type
+        # tr_tags[1]: english name, other names, dex numbers, gender ratio, and type data
+        # tr_tags[2]: abilites label, includes list of the abilities this pokemon has (useful for easy parsing)
+        # tr_tags[3]: abilities data, including descriptions of what they do
+        # tr_tags[4]: labels for classification, height, weight, capture rate, and base egg steps
+        # tr_tags[5]: classification, height, weight, cap rate, and base egg steps data
+        # tr_tags[6]: exp growth, base happiness, effort values earned, flee flag, and entree forest level labels
+        # tr_tags[7]: exp growth, base happiness, effort values earned, flee flag, and entree forest level data
 
-        # numbers
-        numbers = td_tags[2].find_all('tr')
+        td_tags = tr_tags[1].find_all('td', class_='fooinfo') # the columns in the target row
+
+        ## td_tags MAP ##
+        # td_tags[0]: english name
+        # td_tags[1]: other names (ordered as japanese, french, german, korean)
+        # td_tags[2]: dex numbers
+        # td_tags[3]: gender ratios (ordered male, female)
+        # td_tags[4]: type(s)
+
+        ### NAMES DATA ###
+        eng_name = td_tags[0].text.strip() # english name is the first block
+        other_names = [name.strip() for name in td_tags[1].text.strip().split('\n')] # a list of the other name strings, in the second block
+        jap_name = re.findall(r'[A-Za-z]+|[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+', other_names[0].split(": ")[1]) # a list for both spellings
+        fre_name = other_names[1].split(": ")[1] # french name
+        ger_name = other_names[2].split(": ")[1] # german name
+        kor_name = other_names[3].split(": ")[1] # korean name (no latin script here)
+
+        ### POKEDEX NUMBERS DATA ###
+        numbers = td_tags[2].find_all('tr') # this td has another table embedded within
+        # these are formatted like:
+        # National: 	#001
+        # BW Unova: 	#---
+        # B2W2 Unova: 	#---
         try:
-            dex_num = int(re.sub(r'\D', '', numbers[0].find_all('td')[1].text.strip()))
+            dex_num = int(re.sub(r'\D', '', numbers[0].find_all('td')[1].text)) # national dex no.
         except ValueError:
-            dex_num = 0
+            dex_num = 0 # something went wrong here, there should always be a national dex number
         try:
-            bw_num = int(re.sub(r'\D', '', numbers[1].find_all('td')[1].text.strip()))
+            bw_num = int(re.sub(r'\D', '', numbers[1].find_all('td')[1].text)) # black/white dex no.
         except ValueError:
-            bw_num = 0
+            bw_num = 0 # expected if not in the unova dex
         try:
-            bw2_num = int(re.sub(r'\D', '', numbers[2].find_all('td')[1].text.strip()))
+            bw2_num = int(re.sub(r'\D', '', numbers[2].find_all('td')[1].text)) #BW2 dex no.
         except ValueError:
-            bw2_num = 0
+            bw2_num = 0 # expected if not in the unova dex
+        
+        ### GENDER RATIO DATA ###
+        ratios = td_tags[3].find_all('tr') # this td has another table embedded within
+        # formatted like:
+        # Male ♂:	87.5%
+        # Female ♀:	12.5%
+        mal_percent = float(re.sub(r'[^\d.]', '', ratios[0].find_all('td')[1].text))
+        fem_percent = float(re.sub(r'[^\d.]', '', ratios[1].find_all('td')[1].text))
         
         entry = {
                 "National Dex Number": dex_num,
@@ -50,12 +92,11 @@ def scrape_page(url):
                 "Name (french)": fre_name,
                 "Name (german)": ger_name,
                 "Name (korean)": kor_name,
+                "Male Ratio": mal_percent,
+                "Female Ratio": fem_percent,
             }
         """
         to be added:
-
-        "Male Ratio": mal_percent,
-        "Female Ratio": fem_percent,
         "Type": typing,
         "Abilites": abilities,
         "Classification": classification,

@@ -9,7 +9,7 @@ import requests, re, time
 print("Running: ", __file__)
 print("In environment: ", sys.prefix)
 
-pokemondict = AutoSaveDict(file_path="./pokedex_data.json")
+pokemondict = AutoSaveDict(file_path="./pokedex_data.json") # save json to current directory
 
 def scrape_gen_page(gen, url):
     """
@@ -24,7 +24,7 @@ def scrape_gen_page(gen, url):
         #pokemondict["Gen 1"] = gendict
         print("Skipping gen 1...")
         #print(pokemondict)
-        exit()
+        exit() #TODO: remove this
     elif gen == 2:
         #key, value = generation2.scrape_page(url)
         #gendict = pokemondict.setdefault("Gen 2", {})
@@ -45,9 +45,9 @@ def scrape_gen_page(gen, url):
         print("Skipping gen 4...")
     elif gen == 5:
         key, value = generation5.scrape_page(url)
-        gendict = pokemondict.setdefault("Gen 4", {})
+        gendict = pokemondict.setdefault("Gen 5", {})
         gendict[key] = value
-        pokemondict["Gen 4"] = gendict
+        pokemondict["Gen 5"] = gendict
         #print("Skipping gen 5...")
     elif gen == 6:
         #gen_six_page(url)
