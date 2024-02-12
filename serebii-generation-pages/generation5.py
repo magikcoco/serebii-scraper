@@ -96,6 +96,7 @@ def scrape_page(url):
         # this needs to be extracted from the link in either the href attribute of the embedded a tags or the img tag embedded within the a tag
         typing = [a_tag['href'].split('/')[-1].split('.')[0] for a_tag in td_tags[4].find_all('a')]
 
+        # changing rows
         td_tags = tr_tags[11].find_all('td', class_="fooleft") # the columns in the target row
 
         ## td_tags MAP ##
@@ -103,7 +104,36 @@ def scrape_page(url):
 
         ### ABILITIES DATA ###
         abilities = [ability.replace("(Hidden Ability)", "").strip() for ability in td_tags[0].text.split(": ")[1].split(" - ")]
-        
+
+        # changing rows
+        td_tags = tr_tags[14].find_all('td', class_="fooinfo") # the columns in the target row
+
+        ## td_tags MAP ##
+        # td_tags[0]: classification data
+        # td_tags[1]: height data
+        # td_tags[2]: weight data
+        # td_tags[3]: capture rate
+        # td_tags[4]: base egg steps
+
+        ### CLASSIFICATION DATA ###
+        classification = td_tags[0].text.strip()
+
+        ### HEIGHT DATA ###
+        heights = [height.strip() for height in td_tags[1].text.split("\n")]
+        imp_height = heights[0]
+        met_height = heights[1]
+
+        ### WEIGHT DATA ###
+        weights = [weight.strip() for weight in td_tags[2].text.split("\n")]
+        imp_weight = weights[0]
+        met_weight = weights[1]
+
+        ### CAPTURE RATE DATA ###
+        cap_rate = int(re.sub(r'\D', '', td_tags[3].text))
+
+        ### BASE EGG STEPS DATA ###
+        base_egg_steps = int(re.sub(r'\D', '', td_tags[3].text))
+
         entry = {
                 "National Dex Number": dex_num,
                 "Black/White Dex Number": bw_num,
@@ -117,16 +147,16 @@ def scrape_page(url):
                 "Female Ratio": fem_percent,
                 "Type": typing,
                 "Abilites": abilities,
+                "Classification": classification,
+                "Height (imperial)": imp_height,
+                "Height (metric)": met_height,
+                "Weight (imperial)": imp_weight,
+                "Weight (metric)": met_weight,
+                "Capture Rate": cap_rate,
+                "Base Egg Steps": base_egg_steps,
             }
         """
         to be added:
-        "Classification": classification,
-        "Height (imperial)": imp_height,
-        "Height (metric)": met_height,
-        "Weight (imperial)": imp_weight,
-        "Weight (metric)": met_weight,
-        "Capture Rate": cap_rate,
-        "Base Egg Steps": base_egg_steps,
         "XP Growth Points": xp_grow_pt,
         "XP Growth Speed": xp_grow_sp,
         "Base Happiness": base_happiness,
