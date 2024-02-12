@@ -184,7 +184,70 @@ def scrape_page(url):
         ### EGG GROUPS DATA ###
         egg_groups = []
         for tr_tag in td_tags[1].find('table').find_all('tr'):
-            egg_groups.append(tr_tag.find_all('td')[1].find('a').text.strip()) 
+            egg_groups.append(tr_tag.find_all('td')[1].find('a').text.strip())
+        
+        # change tables
+        dextables_index = dextables_index + 1
+        tr_tags = dextables[dextables_index].find_all('tr') # the rows of the target dextable
+
+        ## tr_tags MAP ##
+        # tr_tags[0]: label for evolutionary chain
+        # tr_tags[1]: an embedded table called evochain
+        # tr_tags[2]: row from the above embedded table
+
+        td_tags = tr_tags[1].find_all('td')[1:] # cut off the first td, not needed
+
+        ## td_tags MAP ##
+        # td_tags[0]: first pokemon in the chain (always exists)
+        # none of the following may exist
+        # td_tags[1]: level or method by which the first pokemon evolves into the second
+        # td_tags[2]: the second pokemon in the chain
+        # td_tags[3]: level or method by which the second pokemon evolves into the third
+        # td_tags[4]: the third pokemon in the chain
+
+        evolutions = len(td_tags) # this should be either 1, 3, or 5 in length
+        evolve_level, evolve_into, evolve_from = 0, 0, 0
+        if evolutions == 5: # this means there are 3 pokemon in the chain
+            # the images in the href elements point to a national dex number
+            pkmn_one = int(re.sub(r'\D', '', td_tags[0].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+            pkmn_two = int(re.sub(r'\D', '', td_tags[2].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+            pkmn_three = int(re.sub(r'\D', '', td_tags[4].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+            # check different cases to see what this pokemon evolves into, and which they evolve from
+            if dex_num == pkmn_one: # in this case, the pokemon being looked at is the first one in the evolution chain
+                try:
+                    evolve_level = int(re.sub(r'\D', '', td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()))
+                except ValueError: # this will trigger if the pokemon does not evolve by level up, but by some other means (happiness, etc)
+                    evolve_level = td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()
+                evolve_into = pkmn_two # in this case the pokemon evolves into the second pokemon in the evolution chain
+                evolve_from = pkmn_one # since the pokemon doesnt evolve from any pokemon, it will point to itself
+            elif dex_num == pkmn_two: # in this case, the pokemon being looked at is the second one in the chain
+                try:
+                    evolve_level = int(re.sub(r'\D', '', td_tags[3].find('img')['src'].split('/')[-1].split('.')[0].strip()))
+                except ValueError: # this will trigger if the pokemon does not evolve by level up, but by some other means (happiness, etc)
+                    evolve_level = td_tags[3].find('img')['src'].split('/')[-1].split('.')[0].strip()
+                evolve_into = pkmn_three # the second pokemon in the chain evoles into the third pokemon, and from the 1st
+                evolve_from = pkmn_one
+            else: # in this case, the pokemon is the third in the chain
+                # being the last in the chain, it doesnt evolve, so its unnessecary to assign the evolve_level
+                evolve_into = pkmn_three # it will point to itself for the evolve target
+                evolve_from = pkmn_two # and evolves from the 2nd in the chain
+        elif evolutions == 3: # in this case, the evolve chain contains only two pokemon
+            # the same process as above, but only for two pokemon instead of three
+            pkmn_one = int(re.sub(r'\D', '', td_tags[0].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+            pkmn_two = int(re.sub(r'\D', '', td_tags[2].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+            if dex_num == pkmn_one:
+                try:
+                    evolve_level = int(re.sub(r'\D', '', td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()))
+                except ValueError:
+                    evolve_level = td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()
+                evolve_into = pkmn_two
+                evolve_from = pkmn_one
+            else:
+                evolve_into = pkmn_two
+                evolve_from = pkmn_one
+        else: # this pokemon does not evolve
+            evolve_into = pkmn_one
+            evolve_from = pkmn_one
 
 
         entry = {
@@ -215,12 +278,12 @@ def scrape_page(url):
                 "Entree Forest Level": forest_level,
                 "Wild Hold Items": wild_hold_items,
                 "Egg Groups": egg_groups,
+                "Evolves at level": evolve_level,
+                "Evolves Into": evolve_into,
+                "Evolves From": evolve_from,
             }
         """
         to be added:
-        "Evolves at level": evolve_level,
-        "Evolves Into": evolve_into,
-        "Evolves From": evolve_from,
         "Locations": locations,
         "Flavor Text": flavor_text,
         "Moveset": moveset,
