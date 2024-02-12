@@ -32,12 +32,21 @@ def scrape_page(url):
         ## tr_tags MAP ##
         # tr_tags[0]: labels for names, dex numbers, gender ratio, and type
         # tr_tags[1]: english name, other names, dex numbers, gender ratio, and type data
-        # tr_tags[2]: abilites label, includes list of the abilities this pokemon has (useful for easy parsing)
-        # tr_tags[3]: abilities data, including descriptions of what they do
-        # tr_tags[4]: labels for classification, height, weight, capture rate, and base egg steps
-        # tr_tags[5]: classification, height, weight, cap rate, and base egg steps data
-        # tr_tags[6]: exp growth, base happiness, effort values earned, flee flag, and entree forest level labels
-        # tr_tags[7]: exp growth, base happiness, effort values earned, flee flag, and entree forest level data
+        # tr_tags[2]: japanese name (from an embedded table)
+        # tr_tags[3]: french name (from an embedded table)
+        # tr_tags[4]: german name (from an embedded table)
+        # tr_tags[5]: korean name (from an embedded table)
+        # tr_tags[6]: national pokedex number (from an embedded table)
+        # tr_tags[7]: BW unova pokdex number (from an embedded table)
+        # tr_tags[8]: B2W2 pokedex number (from an embedded table)
+        # tr_tags[9]: Male percent (from an embedded table)
+        # tr_tags[10]: Female percent (from an embedded table)
+        # tr_tags[11]: abilites label, includes list of the abilities this pokemon has (useful for easy parsing)
+        # tr_tags[12]: abilities data, including descriptions of what they do
+        # tr_tags[13]: labels for classification, height, weight, capture rate, and base egg steps
+        # tr_tags[14]: classification, height, weight, cap rate, and base egg steps data
+        # tr_tags[15]: exp growth, base happiness, effort values earned, flee flag, and entree forest level labels
+        # tr_tags[16]: exp growth, base happiness, effort values earned, flee flag, and entree forest level data
 
         td_tags = tr_tags[1].find_all('td', class_='fooinfo') # the columns in the target row
 
@@ -82,6 +91,18 @@ def scrape_page(url):
         # Female ♀:	12.5%
         mal_percent = float(re.sub(r'[^\d.]', '', ratios[0].find_all('td')[1].text))
         fem_percent = float(re.sub(r'[^\d.]', '', ratios[1].find_all('td')[1].text))
+
+        ### TYPE DATA ###
+        # this needs to be extracted from the link in either the href attribute of the embedded a tags or the img tag embedded within the a tag
+        typing = [a_tag['href'].split('/')[-1].split('.')[0] for a_tag in td_tags[4].find_all('a')]
+
+        td_tags = tr_tags[11].find_all('td', class_="fooleft") # the columns in the target row
+
+        ## td_tags MAP ##
+        # td_tags[0]: abilities label
+
+        ### ABILITIES DATA ###
+        abilities = [ability.replace("(Hidden Ability)", "").strip() for ability in td_tags[0].text.split(": ")[1].split(" - ")]
         
         entry = {
                 "National Dex Number": dex_num,
@@ -94,11 +115,11 @@ def scrape_page(url):
                 "Name (korean)": kor_name,
                 "Male Ratio": mal_percent,
                 "Female Ratio": fem_percent,
+                "Type": typing,
+                "Abilites": abilities,
             }
         """
         to be added:
-        "Type": typing,
-        "Abilites": abilities,
         "Classification": classification,
         "Height (imperial)": imp_height,
         "Height (metric)": met_height,
