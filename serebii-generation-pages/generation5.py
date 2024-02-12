@@ -12,6 +12,7 @@ def scrape_page(url):
     print(f"Now downloading: {url}")
     soup = request_page(url) # get the page to scrape
     if soup is not None: # check for null
+        # contains all the target data
         dextables = soup.find_all('table', class_='dextable')
 
         ## dextables MAP ##
@@ -112,8 +113,8 @@ def scrape_page(url):
         # td_tags[0]: classification data
         # td_tags[1]: height data
         # td_tags[2]: weight data
-        # td_tags[3]: capture rate
-        # td_tags[4]: base egg steps
+        # td_tags[3]: capture rate data 
+        # td_tags[4]: base egg steps data
 
         ### CLASSIFICATION DATA ###
         classification = td_tags[0].text.strip()
@@ -133,6 +134,33 @@ def scrape_page(url):
 
         ### BASE EGG STEPS DATA ###
         base_egg_steps = int(re.sub(r'\D', '', td_tags[3].text))
+
+        # changing rows
+        td_tags = tr_tags[16].find_all('td', class_="fooinfo") # the columns in the target row
+
+        ## td_tags MAP ##
+        # td_tags[0]: xp growth data
+        # td_tags[1]: base happiness data
+        # td_tags[2]: effort values earned data
+        # td_tags[3]: flee flag
+        # td_tags[4]: entree forest level
+
+        ### EXPERIENCE GROWTH DATA ###
+        exp_datas = [exp_data for exp_data in td_tags[0].text.split(" Points")]
+        xp_grow_pt = int(re.sub(r'\D', '', exp_datas[0]))
+        xp_grow_sp = exp_datas[1]
+
+        ### BASE HAPPINESS DATA ###
+        base_happiness = int(td_tags[1].text.strip())
+
+        ### EFFORT VALUES EARNED DATA ###
+        ev_earned = [value.strip() for value in td_tags[2].text.split("\n")]
+
+        ### FLEE FLAG DATA ###
+        flee_flag = int(re.sub(r'\D', '', td_tags[3].text))
+
+        ### ENTREE FOREST LEVEL ###
+        forest_level = int(re.sub(r'\D', '', td_tags[4].text))
 
         entry = {
                 "National Dex Number": dex_num,
@@ -154,15 +182,15 @@ def scrape_page(url):
                 "Weight (metric)": met_weight,
                 "Capture Rate": cap_rate,
                 "Base Egg Steps": base_egg_steps,
+                "XP Growth Points": xp_grow_pt,
+                "XP Growth Speed": xp_grow_sp,
+                "Base Happiness": base_happiness,
+                "Effort Values Earned": ev_earned,
+                "Flee Flag": flee_flag,
+                "Entree Forest Level": forest_level,
             }
         """
         to be added:
-        "XP Growth Points": xp_grow_pt,
-        "XP Growth Speed": xp_grow_sp,
-        "Base Happiness": base_happiness,
-        "Effort Values Earned": ev_earned,
-        "Flee Flag": flee_flag,
-        "Entree Forest Level": forest_level,
         "Wild Hold Items": wild_hold_items,
         "Egg Groups": egg_groups,
         "Evolves at level": evolve_level,
