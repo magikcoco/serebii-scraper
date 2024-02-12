@@ -28,7 +28,7 @@ def scrape_page(url):
         # dextables[-1]: stats information, including base stats, is the last dextable on the page
 
         dextables_index = 1 # start at 1
-        tr_tags = dextables[1].find_all('tr') # the rows of the target dextable
+        tr_tags = dextables[dextables_index].find_all('tr') # the rows of the target dextable
 
         ## tr_tags MAP ##
         # tr_tags[0]: labels for names, dex numbers, gender ratio, and type
@@ -162,6 +162,31 @@ def scrape_page(url):
         ### ENTREE FOREST LEVEL ###
         forest_level = int(re.sub(r'\D', '', td_tags[4].text))
 
+        # change tables
+        dextables_index = dextables_index+2 # move to the wild hold items and egg groups table, skip the damage chart
+        tr_tags = dextables[dextables_index].find_all('tr') # the rows of the target dextable
+
+        ## tr_tags MAP ##
+        # tr_tags[0]: labels for wild hold items, egg groups
+        # tr_tags[1]: data for wild hold items and egg groups
+        # tr_tags[2]: embedded table containing wild hold items
+        # tr_tags[3]: embedded table containing egg group selectors
+
+        td_tags = tr_tags[1].find_all('td', class_='fooinfo') # the columns in the target row
+
+        ## td_tags MAP ##
+        # td_tags[0]: wild hold items
+        # td_tags[1]: egg groups
+
+        ### WILD HOLD ITEM DATA ###
+        wild_hold_items = wild_hold_item_parse(td_tags[0].text.strip())
+
+        ### EGG GROUPS DATA ###
+        egg_groups = []
+        for tr_tag in td_tags[1].find('table').find_all('tr'):
+            egg_groups.append(tr_tag.find_all('td')[1].find('a').text.strip()) 
+
+
         entry = {
                 "National Dex Number": dex_num,
                 "Black/White Dex Number": bw_num,
@@ -188,11 +213,11 @@ def scrape_page(url):
                 "Effort Values Earned": ev_earned,
                 "Flee Flag": flee_flag,
                 "Entree Forest Level": forest_level,
+                "Wild Hold Items": wild_hold_items,
+                "Egg Groups": egg_groups,
             }
         """
         to be added:
-        "Wild Hold Items": wild_hold_items,
-        "Egg Groups": egg_groups,
         "Evolves at level": evolve_level,
         "Evolves Into": evolve_into,
         "Evolves From": evolve_from,
