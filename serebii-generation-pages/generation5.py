@@ -248,7 +248,46 @@ def scrape_page(url):
         else: # this pokemon does not evolve
             evolve_into = pkmn_one
             evolve_from = pkmn_one
+        
+        # change table
+        dextables_index = dextables_index + 1
+        tr_tags = dextables[dextables_index].find_all('tr') # the rows of the target dextable
 
+        ## tr_tags MAP ##
+        # tr_tags[0]: label for locations
+        # tr_tags[1]: black location
+        # tr_tags[2]: white location
+        # tr_tags[3]: black2 location
+        # tr_tags[4]: white2 location
+
+        ### LOCATIONS DATA ###
+        locations = {}
+        for tr_tag in tr_tags[1:]: # skip the first one, since its just the label
+            td_tags = tr_tag.find_all('td')
+            locations[td_tags[0].text.strip()] = td_tags[1].text.strip().split(", ")
+
+        # change table
+        dextables_index = dextables_index + 1
+        tr_tags = dextables[dextables_index].find_all('tr')[1:]
+
+        ## tr_tags MAP ##
+        # tr_tags[0]: label for flavor text
+        # tr_tags[1]: black flavor text, contains the flavor text for black, white, black2 and white2
+        # tr_tags[2]: white flavor text
+        # tr_tags[3]: black2 flavor text
+        # tr_tags[4]: white2 flavor text
+
+        ### FLAVOR TEXT DATA ###
+        flavor_text = {}
+        last_flavor = "No text" # necessary for reused td elements containing repeat flavor text across different games
+        for tr_tag in tr_tags:
+            td_tags = tr_tag.find_all('td')
+            # this table is formatted in such a way that flavor text which is the same is not repeated
+            if len(td_tags) > 1: # in this case there is flavor text
+                last_flavor = td_tags[1].text.strip()
+                flavor_text[td_tags[0].text.strip()] = last_flavor
+            else:
+                flavor_text[td_tags[0].text.strip()] = last_flavor
 
         entry = {
                 "National Dex Number": dex_num,
@@ -281,11 +320,11 @@ def scrape_page(url):
                 "Evolves at level": evolve_level,
                 "Evolves Into": evolve_into,
                 "Evolves From": evolve_from,
+                "Locations": locations,
+                "Flavor Text": flavor_text,
             }
         """
         to be added:
-        "Locations": locations,
-        "Flavor Text": flavor_text,
         "Moveset": moveset,
         "Base Stats": base_stats
         """
