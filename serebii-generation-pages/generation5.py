@@ -289,6 +289,47 @@ def scrape_page(url):
             else:
                 flavor_text[td_tags[0].text.strip()] = last_flavor
 
+        # change tables
+        dextables_index = dextables_index + 1
+        # this boolean is used to iterate through moveset tables, because there arent always the same amount of them
+        more_move_tables = not ("Stats" in dextables[dextables_index].find('tr').text)
+        
+        ### MOVESET DATA ###
+        moveset = {}
+        while(more_move_tables):
+            tr_tags = dextables[dextables_index].find_all('tr')
+            label = tr_tags[0].text.strip()
+            if "Level" in label or "TM" in label:
+                name_index = 1
+            else:
+                name_index = 0
+            sub_moveset = {}
+            for tr_tag in tr_tags[2::2]:
+                td_tags = tr_tag.find_all('td')
+                if name_index:
+                    try:
+                        level = int(td_tags[0].text.strip())
+                    except ValueError: # if not level then set level to 0
+                        level = 0
+                else:
+                    level = 0
+                if len(td_tags) > 1: # prevents some weirdness with tables embedded in tables getting picked up as labels
+                    sub_moveset[td_tags[name_index].text.strip()] = level
+            moveset[label] = sub_moveset
+            dextables_index = dextables_index + 1
+            more_move_tables = not ("Stats" in dextables[dextables_index].find('tr').text)
+        
+        # change table
+        # the dextables index isnt advanced here because its advanced already in the last iteration of the movesset while loop
+        tr_tags = dextables[dextables_index].find_all('tr')
+
+        ### BASE STATS DATA ###
+        base_stats = {}
+        labels = [td.text.strip() for td in tr_tags[1].find_all('td')[1:]]
+        td_tags = tr_tags[2].find_all('td')[1:]
+        for label, td_tag in zip(labels, td_tags):
+            base_stats[label] = int(td_tag.text.strip())
+
         entry = {
                 "National Dex Number": dex_num,
                 "Black/White Dex Number": bw_num,
@@ -322,12 +363,9 @@ def scrape_page(url):
                 "Evolves From": evolve_from,
                 "Locations": locations,
                 "Flavor Text": flavor_text,
+                "Moveset": moveset,
+                "Base Stats": base_stats
             }
-        """
-        to be added:
-        "Moveset": moveset,
-        "Base Stats": base_stats
-        """
         
         print("Download Complete!")
 
