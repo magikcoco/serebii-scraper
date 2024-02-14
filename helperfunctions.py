@@ -1,6 +1,9 @@
 import re
 import requests
 from bs4 import BeautifulSoup
+import logging
+
+start_timestamp = None
 
 def wild_hold_item_parse(text):
     return_dict = {}
@@ -33,3 +36,30 @@ def request_page(url):
     else:
         #TODO: handle other errors
         return None
+
+def setup_logger():
+    global initial_timestamp
+
+    if initial_timestamp is None:
+        initial_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    logger = logging.getLogger('my_shared_logger')
+    logger.setLevel(logging.DEBUG)
+
+    log_filename = f'shared_log_{initial_timestamp}.log'
+
+    # Create handlers
+    file_handler = logging.FileHandler(log_filename, mode='a')
+    console_handler = logging.StreamHandler()
+
+    # Create formatters and add it to handlers
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+
+    # Add handlers to the logger
+    if not logger.handlers:
+        logger.addHandler(file_handler)
+        logger.addHandler(console_handler)
+
+    return logger
