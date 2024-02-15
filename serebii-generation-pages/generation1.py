@@ -1,6 +1,8 @@
-from helperfunctions import request_page, wild_hold_item_parse
+from helperfunctions import request_page, wild_hold_item_parse, setup_logger
 from bs4 import BeautifulSoup
 import re
+
+logger = setup_logger()
 
 def scrape_page(url):
     """
@@ -9,7 +11,7 @@ def scrape_page(url):
     returns a string of the english name for the pokemon, and a dictionary containing the info for that pokemon which was scraped from the page
     if request_page from helperfunctions returns None, then this will return None, None
     """
-    print(f"Now downloading: {url}")
+    logger.info(f"Now downloading: {url}")
     soup = request_page(url) # get the page to scrape
     if soup is not None: # check for null
         fooevos = soup.find_all('td', class_=['fooevo', 'foo']) # the labels for the values
@@ -89,7 +91,7 @@ def scrape_page(url):
                     else:
                         base_stats[label] = int(number)
             else:
-                print(f"Unrecognized information:\n{fooevo.text.strip()}:\n {fooinfo.text.strip()}\n\n")
+                logger.warning(f"Unrecognized information:\n{fooevo.text.strip()}:\n {fooinfo.text.strip()}\n\n")
             if "Effort" in fooevo.text:
                 break # nothing past this is useful
         
@@ -157,10 +159,10 @@ def scrape_page(url):
             "Moveset": moveset
         }
 
-        print("Download Complete!")
+        logger.info("Download Complete!")
 
         return eng_name, entry
     else:
-        print("Download Failed: A problem occurred with the requested page.")
+        logger.critical("Download Failed: A problem occurred with the requested page.")
 
         return None, None

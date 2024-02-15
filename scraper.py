@@ -20,24 +20,30 @@ def scrape_gen_page(gen, url):
     # generation pages vary slightly in format so each generation is split into seperate functions
     # additionally if only one page is changed, not all of them break
     if gen == 1:
-        #key, value = generation1.scrape_page(url)
-        #gendict = pokemondict.setdefault("Gen 1", {})
-        #gendict[key] = value
-        #pokemondict["Gen 1"] = gendict
-        logger.warning("Skipping gen 1...")
+        key, value = generation1.scrape_page(url)
+        if key is not None and value is not None:
+            gendict = pokemondict.setdefault("Gen 1", {})
+            gendict[key] = value
+            pokemondict["Gen 1"] = gendict
+        else:
+            logger.warning(f"No data was returned for {url}, value was: {value}")
         exit() #TODO: remove this
     elif gen == 2:
-        #key, value = generation2.scrape_page(url)
-        #gendict = pokemondict.setdefault("Gen 2", {})
-        #gendict[key] = value
-        #pokemondict["Gen 2"] = gendict
-        logger.warning("Skipping gen 2...")
+        key, value = generation2.scrape_page(url)
+        if key is not None and value is not None:
+            gendict = pokemondict.setdefault("Gen 2", {})
+            gendict[key] = value
+            pokemondict["Gen 2"] = gendict
+        else:
+            logger.warning(f"No data was returned for {url}, value was: {value}")
     elif gen == 3:
-        #key, value = generation3.scrape_page(url)
-        #gendict = pokemondict.setdefault("Gen 3", {})
-        #gendict[key] = value
-        #pokemondict["Gen 3"] = gendict
-        logger.warning("Skipping gen 3...")
+        key, value = generation3.scrape_page(url)
+        if key is not None and value is not None:
+            gendict = pokemondict.setdefault("Gen 3", {})
+            gendict[key] = value
+            pokemondict["Gen 3"] = gendict
+        else:
+            logger.warning(f"No data was returned for {url}, value was: {value}")
     elif gen == 4:
         key, value = generation4.scrape_page(url)
         if key is not None and value is not None:
@@ -109,4 +115,4 @@ url = "https://www.serebii.net/pokemon/nationalpokedex.shtml" # this is currentl
 scrape_national_dex_page(url)
 end = time.time()
 exec_time = end - start
-logger.info(f"\n\n\nExecution time: {exec_time}")
+logger.info(f"Execution time: {exec_time}")

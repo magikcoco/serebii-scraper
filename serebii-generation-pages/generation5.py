@@ -118,8 +118,8 @@ def scrape_page(url):
             # this needs to be extracted from the link in either the href attribute of the embedded a tags or the img tag embedded within the a tag
             entry['Types'] = [a_tag['href'].split('/')[-1].split('.')[0] for a_tag in td_tags[4].find_all('a')]
         else:
-            # need the national dex number here or else theres no way to save the data properly
-            logger.critical("Without a national dex number no key is available to save data, aborting...")
+            # need the name here or else theres no way to save the data properly
+            logger.critical("Without a name no key is available to save data, aborting...")
             return None, None
 
         try: # changing rows
@@ -211,8 +211,8 @@ def scrape_page(url):
             tr_tags = dextables[dextables_index].find_all('tr') # the rows of the target dextable
         except Exception:
             logger.critical("Failed to find next dextable, aborting...")
-            # return non for key if there is no dex number
-            return entry.setdefault('National Dex Number', None), entry
+            # return none for key if there is no name
+            return entry.setdefault('Name (english)', None), entry
 
         ## tr_tags MAP ##
         # tr_tags[0]: labels for wild hold items, egg groups
@@ -248,7 +248,7 @@ def scrape_page(url):
         except Exception:
             logger.critical("Failed to find next dextable, aborting...")
             # default 
-            return entry.setdefault('National Dex Number', None), entry
+            return entry.setdefault('Name (english)', None), entry
 
         ## tr_tags MAP ##
         # tr_tags[0]: label for evolutionary chain
@@ -328,7 +328,7 @@ def scrape_page(url):
         except Exception:
             logger.critical("Failed to find next dextable, aborting...")
             # return none if no key
-            return entry.setdefault('National Dex Number', None), entry
+            return entry.setdefault('Name (english)', None), entry
 
         ## tr_tags MAP ##
         # tr_tags[0]: label for locations
@@ -352,8 +352,8 @@ def scrape_page(url):
             tr_tags = dextables[dextables_index].find_all('tr')[1:] # the rows of the target dextable
         except Exception:
             logger.critical("Failed to find next dextable, aborting...")
-            # default to pokedex number none to indicate there is an issue
-            return entry.setdefault('National Dex Number', None), entry
+            # default to name none to indicate there is an issue
+            return entry.setdefault('Name (english)', None), entry
 
         ## tr_tags MAP ##
         # tr_tags[0]: label for flavor text
@@ -385,8 +385,8 @@ def scrape_page(url):
             more_move_tables = not ("Stats" in dextables[dextables_index].find('tr').text)
         except Exception:
             logger.critical("Failed to find next dextable, aborting...")
-            # default to pokedex number none to indicate a problem
-            return entry.setdefault('National Dex Number', None), entry
+            # default to name none to indicate a problem
+            return entry.setdefault('Name (english)', None), entry
         
         ### MOVESET DATA ###
         moveset = {}
@@ -416,7 +416,7 @@ def scrape_page(url):
             except Exception:
                 logger.critical("Failed to find next dextable, aborting...")
                 # default to none for dex num
-                return entry.setdefault('National Dex Number', None), entry
+                return entry.setdefault('Name (english)', None), entry
         
         #add to dictionary
         entry['Moveset'] = moveset
@@ -427,8 +427,8 @@ def scrape_page(url):
             tr_tags = dextables[dextables_index].find_all('tr') # the rows of the target dextable
         except Exception:
             logger.critical("Failed to find next dextable, aborting...")
-            # default to pokedex number none to indicate a problem
-            return entry.setdefault('National Dex Number', None), entry
+            # default to name none to indicate a problem
+            return entry.setdefault('Name (english)', None), entry
 
         ### BASE STATS DATA ###
         entry['Base Stats'] = {}
@@ -442,7 +442,7 @@ def scrape_page(url):
         
         logger.info("Download Completed!")
 
-        return entry.setdefault('National Dex Number', None), entry
+        return entry.setdefault('Name (english)', None), entry
     else:
         logger.critical("Download Failed: A problem occurred with the requested page!")
 
