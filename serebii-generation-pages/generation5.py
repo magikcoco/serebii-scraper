@@ -190,20 +190,20 @@ def scrape_page(url):
 
             ### EXPERIENCE GROWTH DATA ###
             exp_datas = [exp_data for exp_data in td_tags[0].text.split(" Points")]
-            entry["XP Growth Points"] = int(re.sub(r'\D', '', exp_datas[0]))
-            entry["XP Growth Speed"] = exp_datas[1]
+            entry['XP Growth Points'] = int(re.sub(r'\D', '', exp_datas[0]))
+            entry['XP Growth Speed'] = exp_datas[1]
 
             ### BASE HAPPINESS DATA ###
-            entry["Base Happiness"] = int(td_tags[1].text.strip())
+            entry['Base Happiness'] = int(td_tags[1].text.strip())
 
             ### EFFORT VALUES EARNED DATA ###
-            entry["Effort Values Earned"] = [value.strip() for value in td_tags[2].text.split("\n")]
+            entry['Effort Values Earned'] = [value.strip() for value in td_tags[2].text.split("\n")]
 
             ### FLEE FLAG DATA ###
-            entry["Flee Flag"] = int(re.sub(r'\D', '', td_tags[3].text))
+            entry['Flee Flag'] = int(re.sub(r'\D', '', td_tags[3].text))
 
             ### ENTREE FOREST LEVEL ###
-            entry["Entree Forest Level"] = int(re.sub(r'\D', '', td_tags[4].text))
+            entry['Entree Forest Level'] = int(re.sub(r'\D', '', td_tags[4].text))
         else:
             found_data = False
 
