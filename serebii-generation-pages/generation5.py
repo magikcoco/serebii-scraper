@@ -152,9 +152,7 @@ def scrape_page(url):
             # td_tags[4]: base egg steps data
 
             ### CLASSIFICATION DATA ###
-            classification = td_tags[0].text.strip()
-            # add it to the dictonary
-            entry['Classification'] = classification
+            entry['Classification'] = td_tags[0].text.strip()
 
             ### HEIGHT DATA ###
             heights = [height.strip() for height in td_tags[1].text.split("\n")]
