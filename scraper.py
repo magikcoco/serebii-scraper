@@ -6,11 +6,11 @@ from autosavedict import AutoSaveDict
 from bs4 import BeautifulSoup
 import requests, re, time
 
-print("Running: ", __file__)
-print("In environment: ", sys.prefix)
+
+logger = setup_logger()
+logger.info(f"Running: '{__file__}' in environment: '{sys.prefix}'")
 
 pokemondict = AutoSaveDict(file_path="./pokedex_data.json") # save json to current directory
-logger = setup_logger()
 
 def scrape_gen_page(gen, url):
     """
@@ -24,27 +24,28 @@ def scrape_gen_page(gen, url):
         #gendict = pokemondict.setdefault("Gen 1", {})
         #gendict[key] = value
         #pokemondict["Gen 1"] = gendict
-        print("Skipping gen 1...")
-        #print(pokemondict)
+        logger.warning("Skipping gen 1...")
         exit() #TODO: remove this
     elif gen == 2:
         #key, value = generation2.scrape_page(url)
         #gendict = pokemondict.setdefault("Gen 2", {})
         #gendict[key] = value
         #pokemondict["Gen 2"] = gendict
-        print("Skipping gen 2...")
+        logger.warning("Skipping gen 2...")
     elif gen == 3:
         #key, value = generation3.scrape_page(url)
         #gendict = pokemondict.setdefault("Gen 3", {})
         #gendict[key] = value
         #pokemondict["Gen 3"] = gendict
-        print("Skipping gen 3...")
+        logger.warning("Skipping gen 3...")
     elif gen == 4:
-        #key, value = generation4.scrape_page(url)
-        #gendict = pokemondict.setdefault("Gen 4", {})
-        #gendict[key] = value
-        #pokemondict["Gen 4"] = gendict
-        print("Skipping gen 4...")
+        key, value = generation4.scrape_page(url)
+        if key is not None and value is not None:
+            gendict = pokemondict.setdefault("Gen 4", {})
+            gendict[key] = value
+            pokemondict["Gen 4"] = gendict
+        else:
+            logger.warning(f"No data was returned for {url}, value was: {value}")
     elif gen == 5:
         key, value = generation5.scrape_page(url)
         if key is not None and value is not None:
@@ -53,27 +54,26 @@ def scrape_gen_page(gen, url):
             pokemondict["Gen 5"] = gendict
         else:
             logger.warning(f"No data was returned for {url}, value was: {value}")
-        #print("Skipping gen 5...")
     elif gen == 6:
         #gen_six_page(url)
-        print("Skipping gen 6...")
+        logger.warning("Skipping gen 6...")
     elif gen == 7:
         #gen_seven_page(url)
-        print("Skipping gen 7...")
+        logger.warning("Skipping gen 7...")
     elif gen == 8:
         #gen_eight_page(url)
-        print("Skipping gen 8...")
+        logger.warning("Skipping gen 8...")
     elif gen == 9:
         #gen_nine_page(url)
-        print("Skipping gen 9...")
+        logger.warning("Skipping gen 9...")
     else:
-        print(f"Unsupported generation: {gen}") # the last good one was 5, they should have never left using sprites
+        logger.warning(f"Unsupported generation: {gen}") # the last good one was 5, they should have never left using sprites
 
 def scrape_pokemon_page(url):
     """
     grabs a table of links for each generation in which the target pokemon appears and calls pen_page on each one
     """
-    print("Accessing: "+url)
+    logger.info("Accessing: "+url)
     soup = request_page(url) # get the page and make sure its not None
     if soup is not None:
         #target_table_index = 2 # the table we want is the 2nd one of class dextab
@@ -90,7 +90,7 @@ def scrape_national_dex_page(url):
     """
     scrape the serebii website for info
     """
-    print(f"Accessing: {url}")
+    logger.info(f"Accessing: {url}")
     soup = request_page(url)
     if soup is not None:
         table = soup.find('table') # find the table
@@ -109,4 +109,4 @@ url = "https://www.serebii.net/pokemon/nationalpokedex.shtml" # this is currentl
 scrape_national_dex_page(url)
 end = time.time()
 exec_time = end - start
-print(f"\n\n\nExecution time: {exec_time}")
+logger.info(f"\n\n\nExecution time: {exec_time}")
