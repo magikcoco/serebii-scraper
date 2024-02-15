@@ -1,7 +1,7 @@
 import sys
 sys.path.insert(0, './serebii-generation-pages')
 import generation1, generation2, generation3, generation4, generation5
-from helperfunctions import request_page
+from helperfunctions import request_page, setup_logger
 from autosavedict import AutoSaveDict
 from bs4 import BeautifulSoup
 import requests, re, time
@@ -10,11 +10,13 @@ print("Running: ", __file__)
 print("In environment: ", sys.prefix)
 
 pokemondict = AutoSaveDict(file_path="./pokedex_data.json") # save json to current directory
+logger = setup_logger()
 
 def scrape_gen_page(gen, url):
     """
     handles redirecting to the appropriate generation-specific function
     """
+    global logger, pokemondict
     # generation pages vary slightly in format so each generation is split into seperate functions
     # additionally if only one page is changed, not all of them break
     if gen == 1:
@@ -45,9 +47,12 @@ def scrape_gen_page(gen, url):
         print("Skipping gen 4...")
     elif gen == 5:
         key, value = generation5.scrape_page(url)
-        gendict = pokemondict.setdefault("Gen 5", {})
-        gendict[key] = value
-        pokemondict["Gen 5"] = gendict
+        if key is not None and value is not None:
+            gendict = pokemondict.setdefault("Gen 5", {})
+            gendict[key] = value
+            pokemondict["Gen 5"] = gendict
+        else:
+            logger.warning(f"No data was returned for {url}, value was: {value}")
         #print("Skipping gen 5...")
     elif gen == 6:
         #gen_six_page(url)
@@ -104,4 +109,4 @@ url = "https://www.serebii.net/pokemon/nationalpokedex.shtml" # this is currentl
 scrape_national_dex_page(url)
 end = time.time()
 exec_time = end - start
-print(f"\n\n\nExecution time: {exec_time} seconds")
+print(f"\n\n\nExecution time: {exec_time}")
