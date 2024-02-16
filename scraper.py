@@ -26,7 +26,7 @@ def scrape_gen_page(gen, url):
             gendict[key] = value
             pokemondict["Gen 1"] = gendict
         else:
-            logger.warning(f"No data was returned for {url}, value was: {value}")
+            logger.error(f"No data was returned for {url}, value was: {value}")
         exit() #TODO: remove this
     elif gen == 2:
         key, value = generation2.scrape_page(url)
@@ -35,7 +35,7 @@ def scrape_gen_page(gen, url):
             gendict[key] = value
             pokemondict["Gen 2"] = gendict
         else:
-            logger.warning(f"No data was returned for {url}, value was: {value}")
+            logger.error(f"No data was returned for {url}, value was: {value}")
     elif gen == 3:
         key, value = generation3.scrape_page(url)
         if key is not None and value is not None:
@@ -43,7 +43,7 @@ def scrape_gen_page(gen, url):
             gendict[key] = value
             pokemondict["Gen 3"] = gendict
         else:
-            logger.warning(f"No data was returned for {url}, value was: {value}")
+            logger.error(f"No data was returned for {url}, value was: {value}")
     elif gen == 4:
         key, value = generation4.scrape_page(url)
         if key is not None and value is not None:
@@ -51,7 +51,7 @@ def scrape_gen_page(gen, url):
             gendict[key] = value
             pokemondict["Gen 4"] = gendict
         else:
-            logger.warning(f"No data was returned for {url}, value was: {value}")
+            logger.error(f"No data was returned for {url}, value was: {value}")
     elif gen == 5:
         key, value = generation5.scrape_page(url)
         if key is not None and value is not None:
@@ -59,7 +59,7 @@ def scrape_gen_page(gen, url):
             gendict[key] = value
             pokemondict["Gen 5"] = gendict
         else:
-            logger.warning(f"No data was returned for {url}, value was: {value}")
+            logger.error(f"No data was returned for {url}, value was: {value}")
     elif gen == 6:
         #gen_six_page(url)
         logger.warning("Skipping gen 6...")
