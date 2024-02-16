@@ -20,7 +20,7 @@ def scrape_page(url):
         # contains all the target data
         dextables = soup.find_all('table', class_='dextable')
 
-        # dextables MAP ##
+        ## dextables MAP ##
         # dextables[0]: sprites table
         # dextables[1]: general info table, includes names, pokdex numbers, gender ratio, types, abilities, classification, height, weight, capture rate
         # base egg steps, exp growth, base happiness, effor values earned, color, and safari zone flee rate
@@ -351,7 +351,6 @@ def scrape_page(url):
             logger.warning("Failed to find locations data...")
         
         # moveset
-        
         dextables_index = dextables_index + 1
         # this boolean is used to iterate through moveset tables, because there arent always the same amount of them
         more_move_tables = False # default value
