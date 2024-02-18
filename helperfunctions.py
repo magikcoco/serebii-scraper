@@ -3,8 +3,11 @@ import requests
 from bs4 import BeautifulSoup
 import logging
 from datetime import datetime
+import time
+import random
 
 initial_timestamp = None
+timer = time.time()
 
 def setup_logger():
     global initial_timestamp
@@ -58,9 +61,15 @@ def request_page(url):
     """
     Grabs a URL and returns a Beuatiful Soup object that might be null
     """
+    global timer
+    duration = random.uniform(0.8, 1.2)
+    target_time = timer + duration
+    while time.time() < target_time:
+        pass # spin wait
     #time.sleep(5) # for avoiding a rate limit
     response = requests.get(url)
     logger.info(f"Webpage response: {response.status_code}")
+    timer = time.time()
     if response.status_code == 200:
         return BeautifulSoup(response.text, 'html5lib') #magic parsing library do not touch
     else:
