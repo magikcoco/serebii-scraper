@@ -183,6 +183,8 @@ def scrape_page(url):
             # td_tags[3]: level or method by which the second pokemon evolves into the third
             # td_tags[4]: the third pokemon in the chain
 
+            ### EVOLUTION DATA ###
+            #TODO: instead of pointing at dex numbers, point instead at strings which are "Doesnt evolve..." or a pokemon name
             evolutions = len(td_tags) # this should be either 1, 3, or 5 in length
             evolve_level, evolve_into, evolve_from = 0, 0, 0
             if evolutions == 5: # this means there are 3 pokemon in the chain
