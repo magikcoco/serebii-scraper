@@ -47,8 +47,8 @@ def scrape_page(url):
         ## tr_tags MAP ##
         # tr_tags[0]: labels for names, dex numbers, gender ratio, and type
         # tr_tags[1]: english name, japanese name, dex numbers, gender ratio, and type data
-        # tr_tags[2]: national pokedex number (from an embedded table)
-        # tr_tags[3]: johto pokedex number (from an embedded table)
+        # tr_tags[2]: national pokedex number (from an embedded table) there may be an extra tr after this one that has a sinnoh number
+        # tr_tags[3]: johto pokedex number (from an embedded table) 
         # tr_tags[4]: male ratio (from an embedded table)
         # tr_tags[5]: female ratio (from an embedded table)
         # tr_tags[6]: abilities label
@@ -79,7 +79,11 @@ def scrape_page(url):
             ### DEX NUMBERS DATA ###
             numbers = td_tags[2].text.strip().split("#")[1:]
             entry['National Dex Number'] = int(re.sub(r'\D', '', numbers[0].strip())) # strips out everything that would make parsing as int fail
-            entry['Johto Dex Number'] = int(re.sub(r'\D', '', numbers[1].strip())) # strips out everything that would make parsing as int fail
+            try:
+                entry['Johto Dex Number'] = int(re.sub(r'\D', '', numbers[2].strip())) # strips out everything that would make parsing as int fail
+                entry['Sinnoh Number'] = int(re.sub(r'\D', '', numbers[1].strip()))
+            except Exception:
+                entry['Johto Dex Number'] = int(re.sub(r'\D', '', numbers[1].strip())) # strips out everything that would make parsing as int fail
 
             ### GENDER RATIO DATA ###
             gender_ratio = td_tags[3].text.strip().split(":")[1:]
@@ -94,7 +98,10 @@ def scrape_page(url):
             return None, None
 
         try: # changing rows
-            td_tags = tr_tags[6].find_all('td', class_="fooleft") # the columns in the target row
+            if isinstance(entry.setdefault('Sinnoh Number', None), int):
+                td_tags = tr_tags[7].find_all('td', class_="fooleft") # the columns in the target row
+            else:
+                td_tags = tr_tags[6].find_all('td', class_="fooleft") # the columns in the target row
         except Exception:
             logger.warning("Failed to find ability data...")
             found_data = False
@@ -106,7 +113,10 @@ def scrape_page(url):
             found_data = True
 
         try: # changing rows
-            td_tags = tr_tags[9].find_all('td', class_="fooinfo") # the columns in the target row
+            if isinstance(entry.setdefault('Sinnoh Number', None), int):
+                td_tags = tr_tags[10].find_all('td', class_="fooinfo") # the columns in the target row
+            else:
+                td_tags = tr_tags[9].find_all('td', class_="fooinfo") # the columns in the target row
         except Exception:
             logger.warning("Failed to find classification, height, weight, capture rate, and base egg step data...")
             found_data = False
@@ -137,7 +147,11 @@ def scrape_page(url):
             found_data = True
 
         try: # changing rows
-            td_tags = tr_tags[11].find_all('td', class_="fooinfo") # the columns in the target row
+            if isinstance(entry.setdefault('Sinnoh Number', None), int):
+                td_tags = tr_tags[12].find_all('td', class_="fooinfo") # the columns in the target row
+            else:
+                td_tags = tr_tags[11].find_all('td', class_="fooinfo") # the columns in the target row
+            #td_tags = tr_tags[11].find_all('td', class_="fooinfo") # the columns in the target row
         except Exception:
             logger.warning("Failed to find XP growth, base happiness, EVs earned, color, and safari zone flee rate data...")
             found_data = False
@@ -159,6 +173,7 @@ def scrape_page(url):
             entry['Base Happiness'] = int(td_tags[1].text.strip())
 
             ### EFFORT VALUES EARNED DATA ###
+            #FIXME: this does not properly split things. the newline disappears so need a regex for cases like 2 Attack Point(s)1 Defense Point(s)
             entry['Effort Values Earned'] = [value.strip() for value in td_tags[2].text.split("\n")]
 
             ### FLEE FLAG DATA ###
@@ -199,9 +214,12 @@ def scrape_page(url):
             entry['Wild Hold Items'] = wild_hold_item_parse(td_tags[0].text.strip())
 
             ### EGG GROUPS DATA ###
-            entry['Egg Groups'] = []
-            for tr_tag in td_tags[1].find('table').find_all('tr'):
-                entry['Egg Groups'].append(tr_tag.find_all('td')[1].find('a').text.strip())
+            try:
+                entry['Egg Groups'] = []
+                for tr_tag in td_tags[1].find('table').find_all('tr'):
+                    entry['Egg Groups'].append(tr_tag.find_all('td')[1].find('a').text.strip())
+            except Exception:
+                entry['Egg Groups'] = td_tags[1].text.strip()
         else:
             found_data = True
 
@@ -220,7 +238,7 @@ def scrape_page(url):
         # tr_tags[2]: row from the above embedded table
 
         try: # changing rows
-            td_tags = tr_tags[1].find_all('td')[1:] # cut off the first td, not needed
+            td_tags = tr_tags[2].find_all('td') # cut off the first td, not needed
         except Exception:
             logger.warning("Failed to find evolution chain data...")
             found_data = False
@@ -233,55 +251,94 @@ def scrape_page(url):
             # td_tags[2]: the second pokemon in the chain
             # td_tags[3]: level or method by which the second pokemon evolves into the third
             # td_tags[4]: the third pokemon in the chain
-
-            evolutions = len(td_tags) # this should be either 1, 3, or 5 in length
-            evolve_level, evolve_into, evolve_from = 0, 0, 0
-            if evolutions == 5: # this means there are 3 pokemon in the chain
-                # the images in the href elements point to a national dex number
+            ### EVOLUTION DATA ###
+            #TODO: instead of pointing at dex numbers, point instead at strings which are "Doesnt evolve..." or a pokemon name
+            found = False
+            start_index = 2
+            if len(tr_tags) > 3:
+                while (not found):
+                    for td_tag in td_tags:
+                        try:
+                            pkmn_one = int(re.sub(r'\D', '', td_tag.find('a')['href'].split('/')[-1].split('.')[0].strip()))
+                            if entry.setdefault('National Dex Number', 0) == pkmn_one:
+                                found = True
+                        except:
+                            pass
+                        if found:
+                            break
+                    if not found:
+                        start_index = start_index + 1
+                        try:
+                            td_tags = tr_tags[start_index].find_all('td')[1:]
+                        except Exception:
+                            logger.warning("Cannot find target pokemon in evolve chain...")
+                            found = True
+            found = False
+            try:
                 pkmn_one = int(re.sub(r'\D', '', td_tags[0].find('a')['href'].split('/')[-1].split('.')[0].strip()))
-                pkmn_two = int(re.sub(r'\D', '', td_tags[2].find('a')['href'].split('/')[-1].split('.')[0].strip()))
-                pkmn_three = int(re.sub(r'\D', '', td_tags[4].find('a')['href'].split('/')[-1].split('.')[0].strip()))
-                # check different cases to see what this pokemon evolves into, and which they evolve from
-                if entry['National Dex Number'] == pkmn_one: # in this case, the pokemon being looked at is the first one in the evolution chain
+                found = True
+            except Exception:
+                while (not found):
+                    td_tags = td_tags[1:]
                     try:
-                        evolve_level = int(re.sub(r'\D', '', td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()))
-                    except ValueError: # this will trigger if the pokemon does not evolve by level up, but by some other means (happiness, etc)
-                        evolve_level = td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()
-                    evolve_into = pkmn_two # in this case the pokemon evolves into the second pokemon in the evolution chain
-                    evolve_from = pkmn_one # since the pokemon doesnt evolve from any pokemon, it will point to itself
-                elif entry['National Dex Number'] == pkmn_two: # in this case, the pokemon being looked at is the second one in the chain
-                    try:
-                        evolve_level = int(re.sub(r'\D', '', td_tags[3].find('img')['src'].split('/')[-1].split('.')[0].strip()))
-                    except ValueError: # this will trigger if the pokemon does not evolve by level up, but by some other means (happiness, etc)
-                        evolve_level = td_tags[3].find('img')['src'].split('/')[-1].split('.')[0].strip()
-                    evolve_into = pkmn_three # the second pokemon in the chain evoles into the third pokemon, and from the 1st
+                        pkmn_one = int(re.sub(r'\D', '', td_tags[0].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+                        found = True
+                    except:
+                        pass
+                    if len(td_tags) < 1:
+                        break
+            if found:
+                evolutions = len(td_tags) # this should be either 1, 3, or 5 in length
+                evolve_level, evolve_into, evolve_from = 0, 0, 0
+                if evolutions == 5: # this means there are 3 pokemon in the chain
+                    # the images in the href elements point to a national dex number
+                    pkmn_one = int(re.sub(r'\D', '', td_tags[0].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+                    pkmn_two = int(re.sub(r'\D', '', td_tags[2].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+                    pkmn_three = int(re.sub(r'\D', '', td_tags[4].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+                    # check different cases to see what this pokemon evolves into, and which they evolve from
+                    if entry['National Dex Number'] == pkmn_one: # in this case, the pokemon being looked at is the first one in the evolution chain
+                        try:
+                            evolve_level = int(re.sub(r'\D', '', td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()))
+                        except ValueError: # this will trigger if the pokemon does not evolve by level up, but by some other means (happiness, etc)
+                            evolve_level = td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()
+                        evolve_into = pkmn_two # in this case the pokemon evolves into the second pokemon in the evolution chain
+                        evolve_from = pkmn_one # since the pokemon doesnt evolve from any pokemon, it will point to itself
+                    elif entry['National Dex Number'] == pkmn_two: # in this case, the pokemon being looked at is the second one in the chain
+                        try:
+                            evolve_level = int(re.sub(r'\D', '', td_tags[3].find('img')['src'].split('/')[-1].split('.')[0].strip()))
+                        except ValueError: # this will trigger if the pokemon does not evolve by level up, but by some other means (happiness, etc)
+                            evolve_level = td_tags[3].find('img')['src'].split('/')[-1].split('.')[0].strip()
+                        evolve_into = pkmn_three # the second pokemon in the chain evoles into the third pokemon, and from the 1st
+                        evolve_from = pkmn_one
+                    else: # in this case, the pokemon is the third in the chain
+                        # being the last in the chain, it doesnt evolve, so its unnessecary to assign the evolve_level
+                        evolve_into = pkmn_three # it will point to itself for the evolve target
+                        evolve_from = pkmn_two # and evolves from the 2nd in the chain
+                elif evolutions == 3: # in this case, the evolve chain contains only two pokemon
+                    # the same process as above, but only for two pokemon instead of three
+                    pkmn_one = int(re.sub(r'\D', '', td_tags[0].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+                    pkmn_two = int(re.sub(r'\D', '', td_tags[2].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+                    if entry['National Dex Number'] == pkmn_one:
+                        try:
+                            evolve_level = int(re.sub(r'\D', '', td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()))
+                        except ValueError:
+                            evolve_level = td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()
+                        evolve_into = pkmn_two
+                        evolve_from = pkmn_one
+                    else:
+                        evolve_into = pkmn_two
+                        evolve_from = pkmn_one
+                else: # this pokemon does not evolve
+                    pkmn_one = int(re.sub(r'\D', '', td_tags[0].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+                    evolve_into = pkmn_one
                     evolve_from = pkmn_one
-                else: # in this case, the pokemon is the third in the chain
-                    # being the last in the chain, it doesnt evolve, so its unnessecary to assign the evolve_level
-                    evolve_into = pkmn_three # it will point to itself for the evolve target
-                    evolve_from = pkmn_two # and evolves from the 2nd in the chain
-            elif evolutions == 3: # in this case, the evolve chain contains only two pokemon
-                # the same process as above, but only for two pokemon instead of three
-                pkmn_one = int(re.sub(r'\D', '', td_tags[0].find('a')['href'].split('/')[-1].split('.')[0].strip()))
-                pkmn_two = int(re.sub(r'\D', '', td_tags[2].find('a')['href'].split('/')[-1].split('.')[0].strip()))
-                if entry['National Dex Number'] == pkmn_one:
-                    try:
-                        evolve_level = int(re.sub(r'\D', '', td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()))
-                    except ValueError:
-                        evolve_level = td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()
-                    evolve_into = pkmn_two
-                    evolve_from = pkmn_one
-                else:
-                    evolve_into = pkmn_two
-                    evolve_from = pkmn_one
-            else: # this pokemon does not evolve
-                evolve_into = pkmn_one
-                evolve_from = pkmn_one
-            
-            # add to dictionary
-            entry['Evolve Level'] = evolve_level
-            entry['Evolves From'] = evolve_from
-            entry['Evolves Into'] = evolve_into
+                
+                # add to dictionary
+                entry['Evolve Level'] = evolve_level
+                entry['Evolves From'] = evolve_from
+                entry['Evolves Into'] = evolve_into
+            else:
+                logger.warning("Failed to parse evolve chain data...")
         else:
             found_data = True
         
@@ -343,6 +400,9 @@ def scrape_page(url):
 
         try:
             ### LOCATIONS DATA ###
+            #FIXME: gets Game: Location label as one of the locations. should be 2nd tr
+            #FIXME: some of the locations are written like "Cerulean Cave Floors 1, 2 & Basement 1, Safari Zone Area 1" so comma split doesnt work
+            #FIXME: some of the locations are split by a newline which disappears when getting the html. Probably need a regex.
             entry['Locations'] = {}
             for tr_tag in tr_tags[1:-1]: # skip the first one, since its just the label, and the last one which is a link to trianer locations
                 td_tags = tr_tag.find_all('td')
@@ -393,6 +453,8 @@ def scrape_page(url):
         
         #add to dictionary
         entry['Moveset'] = moveset
+
+        # TODO: support pokeathlon stats
 
         # change table
         # the dextables index is only advanced by 1 because its advanced already in the last iteration of the movesset while loop
