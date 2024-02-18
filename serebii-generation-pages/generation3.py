@@ -176,6 +176,8 @@ def scrape_page(url):
             # td_tags[0]: evolution chain
 
             ### EVOLUTION DATA ###
+            #TODO: instead of pointing at dex numbers, point instead at strings which are "Doesnt evolve..." or a pokemon name
+            #FIXME: I don't work at all. Every pokemon is getting 0 in all fields
             a_tags = td_tags[0].find_all('a')
             evolutions = len(a_tags) # this should be either 1, 2, or 3 in length
             # this wont pick up images
@@ -293,6 +295,8 @@ def scrape_page(url):
             logger.critical("Failed to find next dextable (locations), aborting...")
             return entry.setdefault('Name (english)', None), entry
         
+        ### LOCATION DATA ###
+        #FIXME: comma splitting isnt working. use a regex instead?
         try:
             entry['Locations'] = {}
             for tr_tag in tr_tags[2:]: # the first two elements are labels "Location" and etc
@@ -377,9 +381,12 @@ def scrape_page(url):
             return entry.setdefault('Name (english)', None), entry
         
         try:
-            entry['Egg Groups'] = []
-            for tr_tag in tr_tags:
-                entry['Egg Groups'].append(tr_tag.find_all('td')[1].text.strip())
+            try:
+                entry['Egg Groups'] = []
+                for tr_tag in td_tags[1].find('table').find_all('tr'):
+                    entry['Egg Groups'].append(tr_tag.find_all('td')[1].find('a').text.strip())
+            except Exception:
+                entry['Egg Groups'] = td_tags[1].text.strip()
         except Exception:
             logger.warning("Failed to find egg groups data...")
         
