@@ -1,15 +1,26 @@
 # Description
-A WIP python project for extracting generation-dependent information from [Serebii's National Dex](https://www.serebii.net/pokemon/nationalpokedex.shtml). The goal is to generate a JSON file complete with all the available data on each pokemon, ability, item, and move, as well as game sprites from [Bulbapedia](https://archives.bulbagarden.net/wiki/Category:Game_sprites). Ultimately, the project should generate as complete of a dataset on pokemon as is possible through internet resources.
-## TODO List
-- support for pokedex pages generations 4 and 5
-- clean up scripts for generations 1 thru 5 (patch missing information, more maintainable, error handling, etc)
-- in depth bug testing and fixing for generations 1 thru 5
-- download move info for generations 1 thru 5
-- download ability info for generations 3 thru 5
-- download item info for generations 1 thru 5
-- download pokemon sprites from bulbapedia for generations 1 thru 5
-- support for pokedex pages generations 6 thru 9
-- download move info for generations 6 thru 9
-- download ability info for generations 6 thru 9
-- download item info for generations 6 thru 9
-- download game models from [this models site](https://www.models-resource.com/search/?q=pokemon&c=-1&o%5B%5D=g) best I can find
+The goal of this project is to generate a complete set of pokemon data usable by applications from reliable human-readable wikis such as [Serebii](https://www.serebii.net/) and [Bulbapedia](https://bulbapedia.bulbagarden.net/wiki/Main_Page) in JSON format. Additioanlly, the generated JSON files should be usable for importing into NOSQL databases such as [MongoDB](https://www.mongodb.com/). This project is still in development.
+# Installation
+Clone the git repository, and refer to requirements.txt. It is recommended that the user use a [virtual enviornment](https://docs.python.org/3/library/venv.html). The project was created using python version 3.11.7.
+# Usage
+## Running Scripts
+In the python environment of your choosing, execute any of the following .py files with the listed arguments:<br>
+pokedex_scraper.py<br><br>
+## Using the output files
+### pokedex_data.json
+The data is structured such that each pokemon generation contains a sub dictionary of each pokemon which exists in that generation, as its data exists for that generation. For example, pikachu will be in every generation, while scrafty will only be found starting from gen 5. The various statistic categories on the corresponding serebii page will be searched for, based on the standard structure the wbpage tends to follow.<br>
+![https://www.serebii.net/pokedex-bw/012.shtml](README_example_image_butterfree_serebii.png)<br>
+For example, in the above generation 5 pokdex page for butterfree, the english name under the "Name" category would be saved as "Name (english)" and the gender ratio for males would be saved under "Male Ratio".<br><br>
+# Features
+- Stores scraped data into JSON format
+- Scrapes serebii for pokedex information for all pokemon up to generation 5.
+# Planned Features and Improvements
+- Bugfixes for generation 1 - 5 serebii scraper scripts
+- JSON File verification for easily identifiable problems in large files
+- Automatic checking of robots.txt for target sites
+- Support for the serebii attackdex
+- Support for the serebii abilitydex
+- Support for the serebii itemdex
+- Support for the bulbapedia archive for game sprites
+- Support for generations up to the present
+- Arguments for defining specific target data, such as a range of national pokedex numbers, or excluding particular information
