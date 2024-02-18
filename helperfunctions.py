@@ -39,6 +39,7 @@ def setup_logger():
 logger = setup_logger()
 
 def wild_hold_item_parse(text):
+    #FIXME: sometimes misses wild hold items. See parasect, missing balm mushroom - 1% (in gen 4???)
     return_dict = {}
     pattern = r'([A-Z][a-z\s]+)*\s*-\s*([A-Z]+|\d+%|(([A-Z][a-z\s]+)*))(?=[A-Z][a-z]|$)' # monstrosity
     match = re.search(pattern, text)
@@ -59,8 +60,9 @@ def wild_hold_item_parse(text):
 
 def request_page(url):
     """
-    Grabs a URL and returns a Beuatiful Soup object that might be null
+    Grabs a URL and returns a Beautiful Soup object that might be null
     """
+    #TODO: check robots.txt and refuse to request pages which are disallowed
     global timer
     duration = random.uniform(0.8, 1.2)
     target_time = timer + duration
