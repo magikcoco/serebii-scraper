@@ -27,7 +27,7 @@ def scrape_gen_page(gen, url):
             pokemondict["Gen 1"] = gendict
         else:
             logger.error(f"No data was returned for {url}, value was: {value}")
-        exit() #TODO: remove this
+        #exit()
     elif gen == 2:
         key, value = generation2.scrape_page(url)
         if key is not None and value is not None:
@@ -60,17 +60,22 @@ def scrape_gen_page(gen, url):
             pokemondict["Gen 5"] = gendict
         else:
             logger.error(f"No data was returned for {url}, value was: {value}")
+        #exit()
     elif gen == 6:
         #gen_six_page(url)
+        #TODO: support gen 6 pages
         logger.warning("Skipping gen 6...")
     elif gen == 7:
         #gen_seven_page(url)
+        #TODO: support gen7 pages
         logger.warning("Skipping gen 7...")
     elif gen == 8:
         #gen_eight_page(url)
+        #TODO: support gen8 pages
         logger.warning("Skipping gen 8...")
     elif gen == 9:
         #gen_nine_page(url)
+        #TODO: support gen9 pages
         logger.warning("Skipping gen 9...")
     else:
         logger.warning(f"Unsupported generation: {gen}") # the last good one was 5, they should have never left using sprites
@@ -101,7 +106,10 @@ def scrape_national_dex_page(url):
     if soup is not None:
         table = soup.find('table') # find the table
         links = []
+        cap = 151
         for row in table.find_all('tr'): # iterate through table rows
+            if cap == 0:
+                break
             cells = row.find_all('td') # get all cells in row
             if len(cells) > 3: # check if there are at least 3 columns
                 third_column = cells[3] # this is the cell with the target link
@@ -109,10 +117,18 @@ def scrape_national_dex_page(url):
                 if link and link.has_attr('href'):
                     links.append(link['href'])
                     scrape_pokemon_page("https://www.serebii.net"+link['href'])
+            cap = cap - 1
 
+#TODO: handle any possible uncaught errors here
 start = time.time()
 url = "https://www.serebii.net/pokemon/nationalpokedex.shtml" # this is currently the link to the national pokedex page on serebii
 scrape_national_dex_page(url)
 end = time.time()
 exec_time = end - start
 logger.info(f"Execution time: {exec_time}")
+
+#TODO: script to find problems with a generated JSON file, verify its contents are formatted correct
+#TODO: scrape the attackdex here: https://www.serebii.net/attackdex/
+#TODO: scrape the abilitydex here: https://www.serebii.net/abilitydex/
+#TODO: scrape bulbapedia for game sprites here: https://archives.bulbagarden.net/wiki/Category:Game_sprites
+#TODO: parse arguments for options - range of pokemon, exclude generations, only collect certain info, etc
