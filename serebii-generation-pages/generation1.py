@@ -14,154 +14,299 @@ def scrape_page(url):
     logger.info(f"Now downloading: {url}")
     soup = request_page(url) # get the page to scrape
     if soup is not None: # check for null
-        fooevos = soup.find_all('td', class_=['fooevo', 'foo']) # the labels for the values
-        fooinfos = soup.find_all('td', class_=['fooinfo', 'cen']) # the values themselves
+        # declare the entry dictionary
+        entry = {}
 
-        # get names, number, class, height, weight, cap rate, xp growth, stats
-        eng_name = "" # names in different languages
-        jap_name = []
-        fre_name = ""
-        ger_name = ""
-        kor_name = ""
-        dex_num = 0 #national pokedex number
-        classif = "" #the classification of the pokemon
-        imp_height = "" # height and weight statistics in different units
-        imp_weight = ""
-        met_height = ""
-        met_weight = ""
-        cap_rate = 0 # the capture rate
-        xp_grow_sp = "" # this is the speed of growth, like "Very Slow" or "Very Fast"
-        xp_grow_pt = 0 # The growth points. I dont actually know wtf this one even means but its a number
-        typing = [] # the type the pokemon is, may be multiple types
-        base_stats = {} # the base stats for the pokemon
-        moveset = {} # the moveset for this pokemon
-        locations = {} # the locations for each game where this pokemon is found
-
-        # go over the information in tandem so the type of information is identifiable with fooevo
-        for fooevo, fooinfo in zip(fooevos, fooinfos):
-            if "Picture" in fooevo.text: # get the picture from bulbapedia instead, there is a game sprite section
-                continue #skip this
-            elif "Type" in fooevo.text: # these ones dont come up as text
-                more_soup = BeautifulSoup(str(fooinfo), 'html.parser') # parse the html content again
-                a_tags = more_soup.find_all('a') # get the a tags for their href values
-                for tag in a_tags:
-                    href = tag.get('href')
-                    if href:
-                        # need the word in the url
-                        typ = href.split('/')[-1].split('.')[0] # the last word in /example/type.shtml is the target
-                        typing.append(typ)
-            elif "Names" in fooevo.text: # these are the other names category but we need to match it before the english name due to the similar labels
-                o_rows = fooinfo.text.strip().split("\n") #the names are newlines as Language: Name, except for japanese which has two diff writings
-                for o_row in o_rows:
-                    if "Japan" in o_row:
-                        pattern = r'[A-Za-z]+|[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+'
-                        jap_name = re.findall(pattern, o_row.split(": ")[1]) # splits by latin and japanese characters
-                    elif "French" in o_row:
-                        fre_name = o_row.split(":")[1].strip() # in latin char
-                    elif "German" in o_row:
-                        ger_name = o_row.split(":")[1].strip() # in latin char
-                    else: # korean is the last one listed
-                        kor_name = o_row.split(":")[1].strip() # in latin char
-            elif "Name" in fooevo.text: # this is the english name
-                eng_name = fooinfo.text.strip()
-            elif "No." in fooevo.text: # this is the pokedex number
-                numeric = re.sub(r'\D', '', fooinfo.text.strip()) # strips out everything that would make parsing as int fail
-                dex_num = int(numeric)
-            elif "Classif" in fooevo.text: # the classification, Ex. "Seed pokemon", "Turtle pokemon", "Dumbass 3D Sprite using pokemon"
-                classif = fooinfo.text.strip()
-            elif "Height" in fooevo.text: # the height stats
-                imp_height, met_height = re.split(r'[\s\r\n\t]+', fooinfo.text.strip())
-                imp_height, met_height = imp_height.strip(), met_height.strip()
-            elif "Weight" in fooevo.text: # weight stats
-                imp_weight, met_weight = re.split(r'[\s\r\n\t]+', fooinfo.text.strip())
-                imp_weight, met_weight = imp_weight.strip(), met_weight.strip()
-            elif "Capture" in fooevo.text: # capture rate
-                cap_rate = int(fooinfo.text.strip())
-            elif "Exp" in fooevo.text: # growth stats
-                xp_grow_pt, xp_grow_sp = fooinfo.text.strip().split(" Points")
-                xp_grow_pt = int(xp_grow_pt.replace(",", "")) # number has commas seperating hundreds, thousands, etc
-            elif "Effort" in fooevo.text:
-                # pattern to match out the ambiguously seperated values
-                pattern = r'(\d+)\s*([A-Z][a-zA-Z]*)'
-                matches = re.findall(pattern, fooinfo.text)
-                # assign to appropriate value
-                for number, label in matches:
-                    if label == 'Hit':
-                        base_stats["Hit Points"] = int(number) # otherwise it is added as key 'Hit' instead
-                    else:
-                        base_stats[label] = int(number)
-            else:
-                logger.warning(f"Unrecognized information:\n{fooevo.text.strip()}:\n {fooinfo.text.strip()}\n\n")
-            if "Effort" in fooevo.text:
-                break # nothing past this is useful
-        
+        # contains all the target data
         dextables = soup.find_all('table', class_='dextable')
-        # Next get location information
-        loc_dextable = dextables[5]
-        loc_soup = BeautifulSoup(str(loc_dextable), 'html.parser')
-        loc_tr_tags = loc_soup.find_all('tr')
-        for tr_tag in loc_tr_tags:
-            td_tags = tr_tag.find_all('td')
-            for td_tag in td_tags:
-                if 'class' in td_tag.attrs and any(cls in ['firered', 'leafgreen', 'sapphire', 'yellow'] for cls in td_tag['class']):
-                    next_td = td_tag.find_next(class_='fooinfo')
-                    if next_td is not None:
-                        locations[td_tag.text.strip()] = next_td.text.strip()
-                    else:
-                        locations[td_tag.text.strip()] = "Unknown"
-                else:
-                    continue
-        
-        # Next get the move list
-        lvl_up_dextable = dextables[6] # the moves gained from level up
-        tm_hm_dextable = dextables[7] # the moves gained by tm or hm
-        # move information is beyond the scope, to be stored in a separate movelist section.
-        # only need level data. tm or hm implicitly part of move data.
-        # Moves by level up table
-        # starting from the 3rd <tr>, get every other <tr> and take the first two <td> elements
-        lvl_soup = BeautifulSoup(str(lvl_up_dextable), 'html.parser')
-        lvl_tr_tags = lvl_soup.find_all('tr')
-        for tr_tag in lvl_tr_tags[2::2]:
-            td_tags = tr_tag.find_all('td', class_='fooinfo')
-            level = td_tags[0].text.strip() # has the level information
-            name = td_tags[1].text.strip() # has the name
-            try:
-                level = int(level)
-            except ValueError:
-                level = 0
-            moveset.setdefault(name, []).append(level)
-        #moves from tm/hm, level set as -1. in some cases a move might be on both lists, the leveled number comes first
-        tm_hm_soup = BeautifulSoup(str(tm_hm_dextable), 'html.parser')
-        tm_hm_tr_tags = tm_hm_soup.find_all('tr')
-        for tr_tag in tm_hm_tr_tags[2::2]:
-            td_tags = tr_tag.find_all('td', class_='fooinfo') 
-            name = td_tags[1].text.strip() # has the name
-            moveset.setdefault(name, []).append(-1) # treat all levels like -1
 
-        entry = {
-            "Dex Number": dex_num,
-            "Name (english)": eng_name,
-            "Name (japanese)": jap_name,
-            "Name (french)": fre_name,
-            "Name (german)": ger_name,
-            "Name (korean)": kor_name,
-            "Type": typing,
-            "Class": classif,
-            "Height (Imperial)": imp_height,
-            "Height (Metric)": met_height,
-            "Weight (Imperial)": imp_weight,
-            "Weight (Metric)": met_weight,
-            "Capture Rate": cap_rate,
-            "XP Growth Speed": xp_grow_sp,
-            "XP Growth Points": xp_grow_pt,
-            "Base Stats": base_stats,
-            "Locations": locations,
-            "Moveset": moveset
-        }
+        ## dextables MAP ##
+        # dextables[0]: pictures
+        # dextables[1]: names, other names, dex numbers, gender ratio, type, classification, height, weight, capture rate, base egg steps
+        # dextables[2]: xp growth, base happiness, effort values earned (appears to just be the base stats???)
+        # dextables[3]: damage table
+        # dextables[4]: wild hold item and egg groups
+        # dextables[5]: evolution chart
+        # dextables[6]: locations
+        # dextables[7]: first move table
+        # dextables[-1]: base stats
+
+        # default values
+        tr_tags = None # these are tr elements
+        td_tags = None # td elements
+        found_data = True # flag on wether to proceed into something
+
+        dextables_index = 1 # for generation 3, start at the first dextable
+        try:
+            tr_tags = dextables[dextables_index].find_all('tr') # the rows of the target dextable
+        except Exception:
+            logger.critical("Failed to find any dextable elements, aborting...")
+            return entry.setdefault('Name (english)', None), entry # nothing to return in this case, but follow the standard pattern anyway
+        
+        ## tr_tags MAP ##
+        # tr_tags[0]: the label for label for name, other names, numbers, type
+        # tr_tags[1]: the data under the above
+        # tr_tags[2]: japanese name (embedded table)
+        # tr_tags[3]: french name (embedded table)
+        # tr_tags[4]: german name (embedded table)
+        # tr_tags[5]: korean name (embedded table)
+        # tr_tags[6]: labels for classification, height, weight, capture rate, and base egg steps
+        # tr_tags[7]: data for the above
+
+        try:
+            td_tags = tr_tags[1].find_all('td', class_=['fooinfo', 'cen']) # the columns in the target row
+        except Exception:
+            found_data = False
+        
+        if found_data:
+            ## td_tags MAP ##
+            # td_tags[0]: english name
+            # td_tags[1]: japanese, french, german, and korean names
+            # td_tags[2]: national and johto dex number
+            # td_tags[3]: gender ratio
+            # td_tags[4]: types
+
+            ### NAME DATA ###
+            entry['Name (english)'] = td_tags[0].text.strip()
+            inner_table_td_tags = td_tags[1].find_all('td')[1::2]
+            entry['Name (japanese)'] = re.findall(r'[A-Za-z]+|[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+', inner_table_td_tags[0].text.strip())
+            entry['Name (french)'] = inner_table_td_tags[1].text.strip()
+            entry['Name (german)'] = inner_table_td_tags[2].text.strip()
+            entry['Name (korean)'] = inner_table_td_tags[3].text.strip()
+
+            ### DEX NUMBER DATA ###
+            entry['National Dex Number'] = int(re.sub(r'\D', '', td_tags[2].text.strip())) # strips out everything that would make parsing as int fail
+
+            ### TYPE DATA ###
+            entry['Types'] = [a_tag['href'].split('/')[-1].split('.')[0] for a_tag in td_tags[3].find_all('a')[:2]]
+        else:
+            # need the name here or else theres no way to save the data properly
+            logger.warning("Failed to find name, dex number data...")
+            logger.critical("Without a name no key is available to save data, aborting...")
+            return entry.setdefault('Name (english)', None), entry # this will return null for the name but just for the sake of the pattern
+        
+        try:
+            td_tags = tr_tags[7].find_all('td', class_='fooinfo') # the columns in the target row
+        except Exception:
+            found_data = False
+        
+        if found_data:
+            ## td_tags MAP ##
+            # td_tags[0]: english name
+            # td_tags[1]: japanese, french, german, and korean names
+            # td_tags[2]: national and johto dex number
+            # td_tags[3]: gender ratio
+            # td_tags[4]: types
+
+            ### CLASSIFICATION DATA ###
+            entry['Classification'] = td_tags[0].text.strip()
+
+            ### HEIGHT DATA ###
+            heights = [height.strip() for height in td_tags[1].text.split("\n")]
+            entry['Height (imp)'] = heights[0]
+            entry['Height (met)'] = heights[1]
+
+            ### WEIGHT DATA ###
+            weights = [weight.strip() for weight in td_tags[2].text.split("\n")]
+            entry['Weight (imp)'] = weights[0]
+            entry['Weight (met)'] = weights[1]
+
+            ### CAPTURE RATE DATA ###
+            entry['Capture Rate'] = int(re.sub(r'\D', '', td_tags[3].text))
+        else:
+            # need the name here or else theres no way to save the data properly
+            logger.warning("Failed to find classification, height, weight, capture rate, and base egg step...")
+            found_data = True
+
+        dextables_index = dextables_index + 1
+        try:
+            tr_tags = dextables[dextables_index].find_all('tr') # the rows of the target dextable
+        except Exception:
+            logger.critical("Failed to find any dextable elements, aborting...")
+            return entry.setdefault('Name (english)', None), entry
+        
+        ## tr_tags MAP ##
+        # tr_tags[0]: labels
+        # tr_tags[1]: data
+
+        try:
+            td_tags = tr_tags[1].find_all('td', class_='fooinfo') # the columns in the target row
+        except Exception:
+            found_data = False
+        
+        if found_data:
+            ## td_tags MAP ##
+            # td_tags[0]: xp growth
+            # td_tags[1]: base happiness
+            # td_tags[2]: effort values earned (appears to be base stats)
+
+            ### XP GROWTH DATA ###
+            exp_datas = [exp_data for exp_data in td_tags[0].text.split(" Points")]
+            entry['XP Growth Points'] = int(re.sub(r'\D', '', exp_datas[0]))
+            entry['XP Growth Speed'] = exp_datas[1]
+
+            ### BASE STAT DATA ###
+            entry['Base Stats'] = {}
+            pattern = r'(\d+)\s*([A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*)*)'
+            matches = re.findall(pattern, td_tags[1].text)
+            # assign to appropriate value
+            for number, label in matches:
+                entry['Base Stats'][label.strip()] = int(number)
+        else:
+            # need the name here or else theres no way to save the data properly
+            logger.critical("Failed to find xp growth, happiness, base stat data...")
+            found_data = True
+        
+        dextables_index = dextables_index + 2 # skip damage chart
+        try:
+            tr_tags = dextables[dextables_index].find_all('tr') # the rows of the target dextable
+        except Exception:
+            logger.critical("Failed to find any dextable elements, aborting...")
+            return entry.setdefault('Name (english)', None), entry
+        
+        ## tr_tags MAP ##
+        # tr_tags[0]: labels
+        # tr_tags[1]: data
+        # tr_tags[2]: data in an embedded table above
+
+        try:
+            td_tags = tr_tags[2].find_all('td') # thentry['Locations'][td_tags[0].text.strip()] = td_tags[-1].text.strip()e columns in the target row
+        except Exception:
+            found_data = False
+        
+        if found_data:
+            ## td_tags MAP ##
+            # td_tags[0]: first pokemon in the chain (always exists)
+            # none of the following may exist
+            # td_tags[1]: level or method by which the first pokemon evolves into the second
+            # td_tags[2]: the second pokemon in the chain
+            # td_tags[3]: level or method by which the second pokemon evolves into the third
+            # td_tags[4]: the third pokemon in the chain
+
+            evolutions = len(td_tags) # this should be either 1, 3, or 5 in length
+            evolve_level, evolve_into, evolve_from = 0, 0, 0
+            if evolutions == 5: # this means there are 3 pokemon in the chain
+                # the images in the href elements point to a national dex number
+                pkmn_one = int(re.sub(r'\D', '', td_tags[0].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+                pkmn_two = int(re.sub(r'\D', '', td_tags[2].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+                pkmn_three = int(re.sub(r'\D', '', td_tags[4].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+                # check different cases to see what this pokemon evolves into, and which they evolve from
+                if entry['National Dex Number'] == pkmn_one: # in this case, the pokemon being looked at is the first one in the evolution chain
+                    try:
+                        evolve_level = int(re.sub(r'\D', '', td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()))
+                    except ValueError: # this will trigger if the pokemon does not evolve by level up, but by some other means (happiness, etc)
+                        evolve_level = td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()
+                    evolve_into = pkmn_two # in this case the pokemon evolves into the second pokemon in the evolution chain
+                    evolve_from = pkmn_one # since the pokemon doesnt evolve from any pokemon, it will point to itself
+                elif entry['National Dex Number'] == pkmn_two: # in this case, the pokemon being looked at is the second one in the chain
+                    try:
+                        evolve_level = int(re.sub(r'\D', '', td_tags[3].find('img')['src'].split('/')[-1].split('.')[0].strip()))
+                    except ValueError: # this will trigger if the pokemon does not evolve by level up, but by some other means (happiness, etc)
+                        evolve_level = td_tags[3].find('img')['src'].split('/')[-1].split('.')[0].strip()
+                    evolve_into = pkmn_three # the second pokemon in the chain evoles into the third pokemon, and from the 1st
+                    evolve_from = pkmn_one
+                else: # in this case, the pokemon is the third in the chain
+                    # being the last in the chain, it doesnt evolve, so its unnessecary to assign the evolve_level
+                    evolve_into = pkmn_three # it will point to itself for the evolve target
+                    evolve_from = pkmn_two # and evolves from the 2nd in the chain
+            elif evolutions == 3: # in this case, the evolve chain contains only two pokemon
+                # the same process as above, but only for two pokemon instead of three
+                pkmn_one = int(re.sub(r'\D', '', td_tags[0].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+                pkmn_two = int(re.sub(r'\D', '', td_tags[2].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+                if entry['National Dex Number'] == pkmn_one:
+                    try:
+                        evolve_level = int(re.sub(r'\D', '', td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()))
+                    except ValueError:
+                        evolve_level = td_tags[1].find('img')['src'].split('/')[-1].split('.')[0].strip()
+                    evolve_into = pkmn_two
+                    evolve_from = pkmn_one
+                else:
+                    evolve_into = pkmn_two
+                    evolve_from = pkmn_one
+            else: # this pokemon does not evolve
+                pkmn_one = int(re.sub(r'\D', '', td_tags[0].find('a')['href'].split('/')[-1].split('.')[0].strip()))
+                evolve_into = pkmn_one
+                evolve_from = pkmn_one
+            
+            # add to dictionary
+            entry['Evolve Level'] = evolve_level
+            entry['Evolves From'] = evolve_from
+            entry['Evolves Into'] = evolve_into
+        else:
+            logger.warning("Failed to find evole chain data...")
+            found_data = True
+        
+        dextables_index = dextables_index + 1
+        try:
+            tr_tags = dextables[dextables_index].find_all('tr') # the rows of the target dextable
+        except Exception:
+            logger.critical("Failed to find any dextable elements, aborting...")
+            return entry.setdefault('Name (english)', None), entry
+        
+        ## tr_tags MAP ##
+        # tr_tags[0]: label
+        # tr_tags[1]: game (games continue further in successive indexes)
+
+        ### LOCATION DATA ###
+        #FIXME: all the locations just say "details". the "if len() > 2" luikely offender here
+        #FIXME: in cases like venonat, the locations are the key and not the value???? wtf????
+        entry['Locations'] = {}
+        for locations in range(len(tr_tags) - 1, 1, -1):
+            try:
+                td_tags = tr_tags[locations].find_all('td') # the columns in the target row
+                entry['Locations'][td_tags[0].text.strip()] = td_tags[-1].text.strip()
+                if len(td_tags) > 2: # green (Jp) and Blue (Intl) share a line
+                    entry['Locations'][td_tags[1].text.strip()] = td_tags[-1].text.strip()
+            except Exception:
+                logger.warning("Failed to find all location data...")
+        
+        # Level up moves
+        dextables_index = dextables_index + 1
+        # this boolean is used to iterate through moveset tables, because there arent always the same amount of them
+        more_move_tables = False # default value
+        try:
+            more_move_tables = not ("Steps" in dextables[dextables_index].find('tr').text) # if this is true there are no more move tables
+        except Exception:
+            logger.critical("Failed to find next dextable (1st moveset), aborting...")
+            # default to name none to indicate a problem
+            return entry.setdefault('Name (english)', None), entry
+
+        ### MOVESET DATA ###
+        moveset = {}
+        while(more_move_tables):
+            tr_tags = dextables[dextables_index].find_all('tr')
+            label = tr_tags[0].text.strip() # label for the move
+            if "Level" in label or "TM" in label:
+                name_index = 1 # Level | Name | Other stuff
+            else:
+                name_index = 0 # Name | Other stuff
+            sub_moveset = {} # different parts of the moveset from different places
+            for tr_tag in tr_tags[2::2]: # skip the move table label and the column labels, every other element is description text skip that too
+                td_tags = tr_tag.find_all('td')
+                if name_index: # true if name_index is 1
+                    try:
+                        level = int(td_tags[0].text.strip())
+                    except ValueError: # if not level then set level to 0
+                        level = 0
+                else:
+                    level = 0 # no level listed so just set it to 0
+                if len(td_tags) > 1: # prevents some weirdness with tables embedded in tables getting picked up as labels
+                    sub_moveset[td_tags[name_index].text.strip()] = level # add the move as the key and the level as the value
+            moveset[label.replace(" (Details)", "")] = sub_moveset # add the whole table as a dictionary with its header as the key
+            dextables_index = dextables_index + 1
+            try: # check the next table
+                more_move_tables = not ("Stats" in dextables[dextables_index].find('tr').text)
+            except Exception:
+                logger.critical("Failed to find next dextable (moveset), aborting...")
+                # default to none for name
+                return entry.setdefault('Name (english)', None), entry
+        
+        #add to dictionary
+        entry['Moveset'] = moveset
 
         logger.info("Download Complete!")
 
-        return eng_name, entry
+        return entry.setdefault('Name (english)', None), entry
     else:
         logger.critical("Download Failed: A problem occurred with the requested page.")
 
