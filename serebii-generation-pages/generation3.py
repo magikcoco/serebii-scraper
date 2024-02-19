@@ -177,32 +177,19 @@ def scrape_page(url):
 
             ### EVOLUTION DATA ###
             #TODO: instead of pointing at dex numbers, point instead at strings which are "Doesnt evolve..." or a pokemon name
-            #FIXME: I don't work at all. Every pokemon is getting 0 in all fields
             a_tags = td_tags[0].find_all('a')
             evolutions = len(a_tags) # this should be either 1, 2, or 3 in length
-            # this wont pick up images
-            levels = [int(re.sub(r'\D', '', level)) for level in td_tags[0].text.strip().split(">") if re.sub(r'\D', '', level).isdigit()]
-            # so create a list of images
-            image_names = []
-            for img in td_tags[0].find_all('img', recursive=False):
-                image_names.append(img['src'].split('.')[0])
-            image_index = 0
 
             abort_levels = False # this will indicate a problem so the loop can be broken from inside the nested except block
-
             levels = []
-            for level in td_tags[0].text.strip().split(">"):
+            for level in td_tags[0].text.strip().split(">")[:-1]:
                 try:
                     levels.append(int(re.sub(r'\D', '', level)))
                 except Exception:
-                    try:
-                        levels.append(image_names[image_index])
-                    except Exception:
-                        abort_levels = True
+                    abort_levels = True
                 if abort_levels:
                     break
-                image_index = image_index + 1 # advance the index either way to stay in the right spot
-            
+
             evolve_level, evolve_into, evolve_from = 0, 0, 0 #default all 3 to zero
             if not abort_levels:
                 if evolutions == 3: # if there are 3 pokemon in the chain
@@ -213,15 +200,15 @@ def scrape_page(url):
 
                     if entry['National Dex Number'] == pkmn_one: # if the current pokemon is the first
                         evolve_from = pkmn_one
-                        evolve_to = pkmn_two
+                        evolve_into = pkmn_two
                         evolve_level = levels[0]
                     elif entry['National Dex Number'] == pkmn_two: # if the current pokemon is the second
                         evolve_from = pkmn_one
-                        evolve_to = pkmn_three
+                        evolve_into = pkmn_three
                         evolve_level = levels[1]
                     else: # in this case the current pokemon is the third
                         evolve_from = pkmn_two
-                        evolve_to = pkmn_three
+                        evolve_into = pkmn_three
                 elif evolutions == 2: # if there are two pokemon, same as 3 but a little simpler
                     pkmn_one = int(re.sub(r'\D', '', a_tags[0]['href'].split('/')[-1].split('.')[0].strip()))
                     pkmn_two = int(re.sub(r'\D', '', a_tags[1]['href'].split('/')[-1].split('.')[0].strip()))
@@ -234,7 +221,9 @@ def scrape_page(url):
                 else: # if there is only one pokemon, then level can stay at 0 by default and itll point to itself
                     pkmn_one = int(re.sub(r'\D', '', a_tags[0]['href'].split('/')[-1].split('.')[0].strip()))
                     evolve_into = pkmn_one
-                    evolve_from = pkmn_one 
+                    evolve_from = pkmn_one
+            else:
+                logger.warning("A problem occured while parsing evolution data...")
             
             # add to dictionary
             entry['Evolve Level'] = evolve_level
@@ -296,12 +285,11 @@ def scrape_page(url):
             return entry.setdefault('Name (english)', None), entry
         
         ### LOCATION DATA ###
-        #FIXME: comma splitting isnt working. use a regex instead?
         try:
             entry['Locations'] = {}
             for tr_tag in tr_tags[2:]: # the first two elements are labels "Location" and etc
                 tds = tr_tag.find_all('td')
-                entry['Locations'][tds[0].text.strip()] = tds[1].text.strip().split(", ") # Game: Location, Location...
+                entry['Locations'][tds[0].text.strip()] = tds[1].text.strip() # comma splitting isnt a problem when you dont split the commas!
         except Exception:
             logger.warning("Failed to find flavor text data...")
         
