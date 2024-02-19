@@ -195,8 +195,7 @@ def scrape_page(url):
             entry['Base Happiness'] = int(td_tags[1].text.strip())
 
             ### EFFORT VALUES EARNED DATA ###
-            #FIXME: doesnt split properly on newline. Need a regex.
-            entry['Effort Values Earned'] = [value.strip() for value in td_tags[2].text.split("\n")]
+            entry['Effort Values Earned'] = re.findall(r'(\d+\s+[A-Za-z]+(?:\.\s*[A-Za-z]+)?\s+Point\(s\))', td_tags[2].text)
 
             ### FLEE FLAG DATA ###
             entry['Flee Flag'] = int(re.sub(r'\D', '', td_tags[3].text))
@@ -275,6 +274,8 @@ def scrape_page(url):
             # td_tags[4]: the third pokemon in the chain
             ### EVOLUTION DATA ###
             #TODO: instead of pointing at dex numbers, point instead at strings which are "Doesnt evolve..." or a pokemon name
+            #FIXME: cases like poliwhirl which can evolve into two seperate pokemon given different conditions dont record all
+            #FIXME: eevee case where evolution chain moves vertically, and splits into many
             found = False
             start_index = 2
             if len(tr_tags) > 3:
@@ -382,9 +383,8 @@ def scrape_page(url):
 
         try:
             ### LOCATIONS DATA ###
-            #FIXME: I grab the label "trainer locations" at the end when I shouldnt
             entry['Locations'] = {}
-            for tr_tag in tr_tags[1:]: # skip the first one, since its just the label
+            for tr_tag in tr_tags[1:5]: # skip the first one, since its just the label
                 td_tags = tr_tag.find_all('td')
                 entry['Locations'][td_tags[0].text.strip()] = td_tags[1].text.strip().split(", ")
         except Exception:
