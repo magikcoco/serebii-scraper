@@ -250,15 +250,15 @@ def scrape_page(url):
         # tr_tags[1]: game (games continue further in successive indexes)
 
         ### LOCATION DATA ###
-        #FIXME: all the locations just say "details". the "if len() > 2" luikely offender here
-        #FIXME: in cases like venonat, the locations are the key and not the value???? wtf????
         entry['Locations'] = {}
         for locations in range(len(tr_tags) - 1, 1, -1):
             try:
                 td_tags = tr_tags[locations].find_all('td') # the columns in the target row
+                if "Details" in td_tags[-1].text: # prevents a link called details which is sometimes at the end of the list from screwing things up here
+                    td_tags = td_tags[:-1]
                 entry['Locations'][td_tags[0].text.strip()] = td_tags[-1].text.strip()
-                if len(td_tags) > 2: # green (Jp) and Blue (Intl) share a line
-                    entry['Locations'][td_tags[1].text.strip()] = td_tags[-1].text.strip()
+                if len(td_tags) > 2:
+                    entry['Locations'][td_tags[1].text.strip()] = td_tags[2].text.strip()
             except Exception:
                 logger.warning("Failed to find all location data...")
         
