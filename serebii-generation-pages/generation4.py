@@ -173,8 +173,7 @@ def scrape_page(url):
             entry['Base Happiness'] = int(td_tags[1].text.strip())
 
             ### EFFORT VALUES EARNED DATA ###
-            #FIXME: this does not properly split things. the newline disappears so need a regex for cases like 2 Attack Point(s)1 Defense Point(s)
-            entry['Effort Values Earned'] = [value.strip() for value in td_tags[2].text.split("\n")]
+            entry['Effort Values Earned'] = re.findall(r'(\d+\s+[A-Za-z]+(?:\.\s*[A-Za-z]+)?\s+Point\(s\))', td_tags[2].text)
 
             ### FLEE FLAG DATA ###
             entry['Color'] = td_tags[3].text.strip()
@@ -253,6 +252,8 @@ def scrape_page(url):
             # td_tags[4]: the third pokemon in the chain
             ### EVOLUTION DATA ###
             #TODO: instead of pointing at dex numbers, point instead at strings which are "Doesnt evolve..." or a pokemon name
+            #FIXME: cases like poliwhirl which can evolve into two seperate pokemon given different conditions dont record all
+            #FIXME: eevee case where evolution chain moves vertically, and splits into many
             found = False
             start_index = 2
             if len(tr_tags) > 3:
@@ -400,13 +401,10 @@ def scrape_page(url):
 
         try:
             ### LOCATIONS DATA ###
-            #FIXME: gets Game: Location label as one of the locations. should be 2nd tr
-            #FIXME: some of the locations are written like "Cerulean Cave Floors 1, 2 & Basement 1, Safari Zone Area 1" so comma split doesnt work
-            #FIXME: some of the locations are split by a newline which disappears when getting the html. Probably need a regex.
             entry['Locations'] = {}
-            for tr_tag in tr_tags[1:-1]: # skip the first one, since its just the label, and the last one which is a link to trianer locations
+            for tr_tag in tr_tags[2:-1]: # skip the first one, since its just the label, and the last one which is a link to trianer locations
                 td_tags = tr_tag.find_all('td')
-                entry['Locations'][td_tags[0].text.strip()] = re.split(r',|\n', td_tags[1].text.strip()) #locations split on newline as well as commas
+                entry['Locations'][td_tags[0].text.strip()] = td_tags[1].text.strip() #no splitting
         except Exception:
             logger.warning("Failed to find locations data...")
         
