@@ -41,7 +41,8 @@ logger = setup_logger()
 def wild_hold_item_parse(text):
     #FIXME: sometimes misses wild hold items. See parasect, missing balm mushroom - 1% (in gen 4???)
     return_dict = {}
-    pattern = r'([A-Z][a-z\s]+)*\s*-\s*([A-Z]+|\d+%|(([A-Z][a-z\s]+)*))(?=[A-Z][a-z]|$)' # monstrosity
+    #pattern = r'([A-Z][a-z\s]+)*\s*-\s*([A-Z]+|\d+%|(([A-Z][a-z\s]+)*))(?=[A-Z][a-z]|$)' # monstrosity
+    pattern = r"([A-Z][a-z'\s]+)*\s*-\s*([A-Z]+|\d+%|(([A-Z][a-z'\s]+)*))(?=[A-Z][a-z]|$)"
     match = re.search(pattern, text)
     matches = []
     while(match is not None): # get all the matches
